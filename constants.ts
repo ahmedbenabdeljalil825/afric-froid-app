@@ -24,6 +24,14 @@ export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
     inactive: 'Inactive',
     save: 'Save Changes',
     cancel: 'Cancel',
+    about: 'About',
+    alarms: 'Alarms',
+    terms: 'Terms of Service',
+    privacy: 'Privacy Policy',
+    acknowledge: 'Acknowledge',
+    clearAll: 'Clear All',
+    noActiveAlarms: 'No active alarms',
+    viewHistory: 'View History',
   },
   fr: {
     dashboard: 'Tableau de bord',
@@ -40,5 +48,13 @@ export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
     inactive: 'Inactif',
     save: 'Enregistrer',
     cancel: 'Annuler',
+    about: 'À propos',
+    alarms: 'Alarmes',
+    terms: 'Conditions d\'utilisation',
+    privacy: 'Politique de confidentialité',
+    acknowledge: 'Acquitter',
+    clearAll: 'Tout effacer',
+    noActiveAlarms: 'Aucune alarme active',
+    viewHistory: 'Voir l\'historique',
   }
 };

@@ -7,6 +7,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminUserDesigner from './pages/AdminUserDesigner';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import { AboutPage, TermsOfService, PrivacyPolicy } from './pages/CorporatePages';
+import AlarmHistoryPage from './pages/AlarmHistoryPage';
 import { User, UserRole, UserConfig, MqttConfig } from './types';
 import { mqttService } from './services/mqttService';
 import { DEFAULT_USER_CONFIG } from './constants';
@@ -81,6 +83,26 @@ const App: React.FC = () => {
     await supabase.auth.signOut();
   };
 
+  const handleUpdateUser = async (updatedUser: User) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: updatedUser.name,
+          language: updatedUser.language
+        })
+        .eq('id', updatedUser.id);
+
+      if (error) {
+        console.error('Error updating profile:', error);
+      } else {
+        setCurrentUser(updatedUser);
+      }
+    } catch (err) {
+      console.error('Unexpected error updating profile:', err);
+    }
+  };
+
   // Note: handleCreateUser, handleUpdateUser, handleDeleteUser 
   // currently only update backend state. We need to pass these to AdminDashboard
   // but for now AdminDashboard will handle its own data fetching/updating directly from Supabase.
@@ -121,11 +143,15 @@ const App: React.FC = () => {
               <>
                 <Route path="/dashboard" element={<ClientDashboard user={currentUser} />} />
                 <Route path="/controls" element={<ClientControls user={currentUser} />} />
+                <Route path="/alarms" element={<AlarmHistoryPage />} />
               </>
             )}
 
             {/* Shared Routes */}
-            <Route path="/settings" element={<Settings user={currentUser} onUpdateUser={() => { }} />} />
+            <Route path="/settings" element={<Settings user={currentUser} onUpdateUser={handleUpdateUser} />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to={currentUser.role === UserRole.ADMIN ? "/admin" : "/dashboard"} replace />} />

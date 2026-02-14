@@ -15,31 +15,35 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
   const t = TRANSLATIONS[user.language];
 
   useEffect(() => {
+    const topic = user.mqttConfig?.topics.telemetry || 'telemetry';
     const unsubscribe = mqttService.subscribe((data) => {
       setTelemetry(data);
-      if (targetSetpoint === '') {
+      if (targetSetpoint === '' && data.setpoint !== undefined) {
         setTargetSetpoint(data.setpoint.toString());
       }
-    });
+    }, topic);
     return () => unsubscribe();
-  }, [targetSetpoint]);
+  }, [targetSetpoint, user.mqttConfig?.topics.telemetry]);
 
   const handleSetpointChange = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!targetSetpoint) return;
+    if (!targetSetpoint || !telemetry) return;
 
     setLoading(true);
+    const topic = user.mqttConfig?.topics.telemetry || 'telemetry';
+
     // Simulate network delay
     setTimeout(() => {
-      mqttService.publishControl('setpoint', targetSetpoint);
+      mqttService.publishVariableUpdate(topic, 'setpoint', Number(targetSetpoint));
       setLoading(false);
     }, 800);
   };
 
   const togglePower = () => {
-    if (!user.config.allowPowerControl) return;
-    const newState = telemetry?.status === 'RUNNING' ? 'OFF' : 'ON';
-    mqttService.publishControl('power', newState);
+    if (!user.config?.allowPowerControl || !telemetry) return;
+    const newState = telemetry.status === 'RUNNING' ? 'OFF' : 'ON';
+    const topic = user.mqttConfig?.topics.telemetry || 'telemetry';
+    mqttService.publishVariableUpdate(topic, 'status', newState);
   };
 
   if (!telemetry) {
@@ -60,7 +64,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Setpoint Control Card */}
-        {user.config.allowSetpointControl && (
+        {user.config?.allowSetpointControl && (
           <div className="bg-white rounded-[30px] p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-shadow duration-300 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-50 rounded-bl-[100px] -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
 
@@ -141,7 +145,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
               </div>
             </div>
 
-            {user.config.allowPowerControl ? (
+            {user.config?.allowPowerControl ? (
               <button
                 onClick={togglePower}
                 className={`w-full py-5 rounded-2xl font-bold text-lg text-white transition-all shadow-xl hover:-translate-y-1 active:translate-y-0 ${telemetry.status === 'RUNNING'

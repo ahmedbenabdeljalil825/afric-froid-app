@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { User, UserRole, UserConfig, MqttConfig } from '../types';
-import { DEFAULT_USER_CONFIG } from '../constants';
 import { Plus, Search, Edit2, Trash2, CheckCircle, XCircle, Settings, X, RefreshCw } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
@@ -17,7 +16,6 @@ const AdminDashboard: React.FC = () => {
     companyId: '',
     role: UserRole.CLIENT,
     isActive: true,
-    config: { ...DEFAULT_USER_CONFIG },
     mqttConfig: {
       brokerUrl: 'wss://broker.hivemq.com:8000/mqtt',
       topics: {
@@ -76,7 +74,6 @@ const AdminDashboard: React.FC = () => {
       companyId: '',
       role: UserRole.CLIENT,
       isActive: true,
-      config: { ...DEFAULT_USER_CONFIG },
       mqttConfig: {
         brokerUrl: 'wss://broker.hivemq.com:8000/mqtt',
         topics: {
@@ -103,7 +100,6 @@ const AdminDashboard: React.FC = () => {
             fullName: formData.name,
             role: formData.role,
             isActive: formData.isActive,
-            config: formData.config,
             mqttConfig: formData.mqttConfig,
           },
         });
@@ -129,7 +125,6 @@ const AdminDashboard: React.FC = () => {
             password: createPassword,
             fullName: formData.name,
             role: formData.role,
-            config: formData.config,
             mqttConfig: formData.mqttConfig,
           },
         });
@@ -157,18 +152,6 @@ const AdminDashboard: React.FC = () => {
     } else {
       alert('Error deleting user: ' + error.message);
     }
-  };
-
-
-  const toggleConfig = (key: keyof UserConfig) => {
-    if (!formData.config) return;
-    setFormData({
-      ...formData,
-      config: {
-        ...formData.config,
-        [key]: !formData.config[key]
-      }
-    });
   };
 
   return (
@@ -216,7 +199,7 @@ const AdminDashboard: React.FC = () => {
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Role</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Status</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Password</th>
-                <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Dashboard Config</th>
+                <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Widgets</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm text-right">Actions</th>
               </tr>
             </thead>
@@ -259,11 +242,9 @@ const AdminDashboard: React.FC = () => {
                       </code>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="flex gap-1">
-                        {user.config.showTemperatureChart && <span className="w-2 h-2 rounded-full bg-cyan-400" title="Temp Chart"></span>}
-                        {user.config.showPressureChart && <span className="w-2 h-2 rounded-full bg-indigo-400" title="Pressure Chart"></span>}
-                        {user.config.allowSetpointControl && <span className="w-2 h-2 rounded-full bg-emerald-400" title="Control"></span>}
-                      </div>
+                      <span className="text-xs text-slate-500">
+                        Configure in Designer →
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -391,31 +372,6 @@ const AdminDashboard: React.FC = () => {
                   </label>
                 </div>
 
-                <div className="border-t border-slate-100 pt-4">
-                  <h4 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
-                    <Settings size={16} />
-                    Dashboard Configuration
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { key: 'showTemperatureChart', label: 'Show Temp Chart' },
-                      { key: 'showPressureChart', label: 'Show Pressure Chart' },
-                      { key: 'showPowerChart', label: 'Show Power Chart' },
-                      { key: 'allowSetpointControl', label: 'Allow Setpoint' },
-                      { key: 'allowPowerControl', label: 'Allow Power Ctrl' },
-                    ].map((item) => (
-                      <label key={item.key} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-slate-50">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 text-frost-600 rounded border-slate-300 focus:ring-frost-500"
-                          checked={!!formData.config?.[item.key as keyof UserConfig]}
-                          onChange={() => toggleConfig(item.key as keyof UserConfig)}
-                        />
-                        <span className="text-sm text-slate-600">{item.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* MQTT Configuration Section */}
