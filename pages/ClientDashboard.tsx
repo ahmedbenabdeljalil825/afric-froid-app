@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StatCard, LiveChart } from '../components/DashboardWidgets';
 import { Thermometer, Zap, Gauge, Activity, Radio } from 'lucide-react';
 import { User, PLCTelemetry } from '../types';
-import { mqttService } from '../services/mockMqttService';
+import { mqttService } from '../services/mqttService';
 import { TRANSLATIONS } from '../constants';
 
 interface ClientDashboardProps {
@@ -54,55 +54,55 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title={t.temperature} 
-          value={telemetry.temperature.toFixed(1)} 
-          unit="°C" 
-          icon={Thermometer} 
+        <StatCard
+          title={t.temperature}
+          value={telemetry.temperature.toFixed(1)}
+          unit="°C"
+          icon={Thermometer}
           color="cyan" // Brand Light Blue theme
           trend="down"
         />
-        <StatCard 
-          title={t.pressure} 
-          value={telemetry.pressure} 
-          unit="PSI" 
-          icon={Gauge} 
+        <StatCard
+          title={t.pressure}
+          value={telemetry.pressure}
+          unit="PSI"
+          icon={Gauge}
           color="indigo" // Brand Dark Blue theme
           trend="neutral"
         />
-        <StatCard 
-          title="Power Usage" 
-          value={telemetry.powerUsage} 
-          unit="kW" 
-          icon={Zap} 
+        <StatCard
+          title="Power Usage"
+          value={telemetry.powerUsage}
+          unit="kW"
+          icon={Zap}
           color="amber"
           trend="up"
         />
-        <StatCard 
-          title="System Status" 
-          value={telemetry.status} 
-          unit="" 
-          icon={Activity} 
+        <StatCard
+          title="System Status"
+          value={telemetry.status}
+          unit=""
+          icon={Activity}
           color={telemetry.status === 'RUNNING' ? 'emerald' : 'blue'}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {user.config.showTemperatureChart && (
-          <LiveChart 
-            title="Temperature Trends" 
-            data={history} 
-            dataKey="temperature" 
+          <LiveChart
+            title="Temperature Trends"
+            data={history}
+            dataKey="temperature"
             color="#009fe3" // Brand Light Blue
             unit="°C"
           />
         )}
-        
+
         {user.config.showPressureChart && (
-          <LiveChart 
-            title="Suction Pressure" 
-            data={history} 
-            dataKey="pressure" 
+          <LiveChart
+            title="Suction Pressure"
+            data={history}
+            dataKey="pressure"
             color="#002060" // Brand Dark Blue
             unit="PSI"
           />

@@ -11,6 +11,16 @@ export interface UserConfig {
   allowPowerControl: boolean;
 }
 
+export interface MqttConfig {
+  brokerUrl: string;
+  username?: string;
+  password?: string;
+  topics: {
+    telemetry: string;
+    command: string;
+  };
+}
+
 export interface User {
   id: string;
   username: string;
@@ -18,6 +28,18 @@ export interface User {
   role: UserRole;
   isActive: boolean;
   config: UserConfig;
+  mqttConfig?: MqttConfig;
+  language: 'en' | 'fr';
+}
+
+export interface Profile {
+  id: string; // matches auth.users.id
+  username: string;
+  full_name: string;
+  role: UserRole;
+  is_active: boolean;
+  config: UserConfig;
+  mqtt_config?: MqttConfig;
   language: 'en' | 'fr';
 }
 

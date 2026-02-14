@@ -1,32 +1,32 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Settings, 
-  Users, 
-  LogOut, 
-  Menu, 
-  X, 
-  Activity 
+import { useLocation, useNavigate, Outlet } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Settings,
+  Users,
+  LogOut,
+  Menu,
+  X,
+  Activity
 } from 'lucide-react';
 import { User, UserRole } from '../types';
 import { TRANSLATIONS } from '../constants';
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   user: User;
   onLogout: () => void;
 }
 
 // Brand Icon only (No Text) for small spaces, matching the geometry
 const BrandIcon = ({ className = "h-10 w-10" }: { className?: string }) => (
-  <svg 
-    viewBox="0 0 200 180" 
-    className={className} 
+  <svg
+    viewBox="0 0 200 180"
+    className={className}
     xmlns="http://www.w3.org/2000/svg"
   >
     <g transform="translate(0, 0)">
-       {/* Left Shape */}
+      {/* Left Shape */}
       <path d="M30,170 L90,170 L120,40 L60,40 Z" fill="#002060" />
       {/* Right Shape */}
       <path d="M95,130 L155,130 L185,0 L125,0 Z" fill="#009fe3" />
@@ -51,11 +51,10 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           navigate(path);
           setSidebarOpen(false);
         }}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-          isActive 
-            ? 'bg-frost-500 text-white shadow-lg shadow-frost-500/30' 
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
+            ? 'bg-frost-500 text-white shadow-lg shadow-frost-500/30'
             : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-        }`}
+          }`}
       >
         <Icon size={20} />
         <span className="font-medium">{label}</span>
@@ -67,23 +66,22 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     <div className="min-h-screen bg-slate-50 flex overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-slate-900/50 z-20 lg:hidden backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside 
-        className={`fixed lg:static inset-y-0 left-0 z-30 w-72 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 z-30 w-72 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         <div className="h-full flex flex-col p-6">
           <div className="flex items-center gap-3 px-2 mb-10">
             {/* Added white container for logo visibility */}
             <div className="bg-white p-2 rounded-lg shadow-lg">
-               <BrandIcon className="h-10 w-12 flex-shrink-0" />
+              <BrandIcon className="h-10 w-12 flex-shrink-0" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight italic leading-tight">
@@ -132,10 +130,10 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="h-16 lg:hidden flex items-center justify-between px-4 bg-white border-b border-slate-200">
           <div className="flex items-center gap-3">
-             <BrandIcon className="h-8 w-10" />
-             <span className="font-bold text-slate-900 italic">AFRIC FROID</span>
+            <BrandIcon className="h-8 w-10" />
+            <span className="font-bold text-slate-900 italic">AFRIC FROID</span>
           </div>
-          <button 
+          <button
             onClick={() => setSidebarOpen(!isSidebarOpen)}
             className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
           >
@@ -145,7 +143,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
         <div className="flex-1 overflow-auto p-4 lg:p-8 bg-slate-50">
           <div className="max-w-7xl mx-auto space-y-8">
-            {children}
+            <Outlet />
           </div>
         </div>
       </main>

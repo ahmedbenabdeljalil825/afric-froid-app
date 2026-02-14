@@ -1,0 +1,9 @@
+/* @import "tailwindcss"; */
+
+/* Animation delay utilities for staggered entrance animations */
+.delay-0 { animation-delay: 0ms; }
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
