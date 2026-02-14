@@ -23,24 +23,26 @@ export interface MqttConfig {
 
 export interface User {
   id: string;
-  username: string;
+  companyId: string;
   name: string;
   role: UserRole;
   isActive: boolean;
   config: UserConfig;
   mqttConfig?: MqttConfig;
   language: 'en' | 'fr';
+  password?: string;
 }
 
 export interface Profile {
   id: string; // matches auth.users.id
-  username: string;
+  company_id: string;
   full_name: string;
   role: UserRole;
   is_active: boolean;
   config: UserConfig;
   mqtt_config?: MqttConfig;
   language: 'en' | 'fr';
+  password?: string;
 }
 
 export interface PLCTelemetry {

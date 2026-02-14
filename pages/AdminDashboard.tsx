@@ -9,11 +9,12 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form State
   const [formData, setFormData] = useState<Partial<User>>({
     name: '',
-    username: '',
+    companyId: '',
     role: UserRole.CLIENT,
     isActive: true,
     config: { ...DEFAULT_USER_CONFIG },
@@ -39,13 +40,14 @@ const AdminDashboard: React.FC = () => {
     } else if (data) {
       const mappedUsers: User[] = data.map((d: any) => ({
         id: d.id,
-        username: d.username,
+        companyId: d.company_id,
         name: d.full_name,
         role: d.role as UserRole,
         isActive: d.is_active,
         config: d.config as UserConfig,
         mqttConfig: d.mqtt_config as MqttConfig,
-        language: d.language
+        language: d.language,
+        password: d.password
       }));
       setUsers(mappedUsers);
     }
@@ -55,6 +57,11 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.companyId.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const openEditModal = (user: User) => {
     setEditingUser(user);
@@ -66,7 +73,7 @@ const AdminDashboard: React.FC = () => {
     setEditingUser(null);
     setFormData({
       name: '',
-      username: '',
+      companyId: '',
       role: UserRole.CLIENT,
       isActive: true,
       config: { ...DEFAULT_USER_CONFIG },
@@ -86,24 +93,32 @@ const AdminDashboard: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
-      // Update existing user profile
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.name,
-          role: formData.role,
-          is_active: formData.isActive,
-          config: formData.config,
-          mqtt_config: formData.mqttConfig,
-          // username: formData.username // Usually shouldn't change username if it links to something, but okay
-        })
-        .eq('id', editingUser.id);
+      try {
+        // Use Edge Function for update to handle password changes securely
+        const { data, error: functionError } = await supabase.functions.invoke('update-user', {
+          body: {
+            userId: editingUser.id,
+            companyId: formData.companyId,
+            password: formData.password, // This will now update the real Auth password
+            fullName: formData.name,
+            role: formData.role,
+            isActive: formData.isActive,
+            config: formData.config,
+            mqttConfig: formData.mqttConfig,
+          },
+        });
 
-      if (!error) {
+        if (functionError) {
+          throw functionError;
+        }
+        if (data?.error) {
+          throw new Error(data.error);
+        }
+
         fetchUsers();
         setIsModalOpen(false);
-      } else {
-        alert('Error updating user: ' + error.message);
+      } catch (err: any) {
+        alert('Error updating user: ' + err.message);
       }
     } else {
       // Create new user via Edge Function
@@ -113,7 +128,6 @@ const AdminDashboard: React.FC = () => {
             companyId: createCompanyId,
             password: createPassword,
             fullName: formData.name,
-            username: formData.username,
             role: formData.role,
             config: formData.config,
             mqttConfig: formData.mqttConfig,
@@ -165,9 +179,20 @@ const AdminDashboard: React.FC = () => {
           <p className="text-slate-500">Manage client access and dashboard configurations</p>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex-1 max-w-md relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search by name or company ID..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-[#009fe3] outline-none text-sm transition-all"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
           <button
             onClick={fetchUsers}
-            className="flex items-center gap-2 bg-slate-100 text-slate-600 px-5 py-2.5 rounded-xl font-medium hover:bg-slate-200 transition-colors"
+            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg transition-colors"
           >
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
             Refresh
@@ -190,71 +215,95 @@ const AdminDashboard: React.FC = () => {
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">User</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Role</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Status</th>
+                <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Password</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Dashboard Config</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
-                        {user.name.charAt(0)}
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
+                          {user.name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-slate-900">{user.name}</p>
+                          <p className="text-xs text-slate-500">ID: {user.companyId}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-slate-900">{user.name}</p>
-                        <p className="text-xs text-slate-500">@{user.username}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-md text-xs font-bold ${user.role === UserRole.ADMIN ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                      }`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {user.isActive ? (
-                        <CheckCircle size={16} className="text-emerald-500" />
-                      ) : (
-                        <XCircle size={16} className="text-slate-400" />
-                      )}
-                      <span className={`text-sm ${user.isActive ? 'text-emerald-700' : 'text-slate-500'}`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 rounded-md text-xs font-bold ${user.role === UserRole.ADMIN ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                        {user.role}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-1">
-                      {user.config.showTemperatureChart && <span className="w-2 h-2 rounded-full bg-cyan-400" title="Temp Chart"></span>}
-                      {user.config.showPressureChart && <span className="w-2 h-2 rounded-full bg-indigo-400" title="Pressure Chart"></span>}
-                      {user.config.allowSetpointControl && <span className="w-2 h-2 rounded-full bg-emerald-400" title="Control"></span>}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openEditModal(user)}
-                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
-                        title="Edit user"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      {user.role !== UserRole.ADMIN && (
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {user.isActive ? (
+                          <CheckCircle size={16} className="text-emerald-500" />
+                        ) : (
+                          <XCircle size={16} className="text-slate-400" />
+                        )}
+                        <span className={`text-sm ${user.isActive ? 'text-emerald-700' : 'text-slate-500'}`}>
+                          {user.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <code className="text-xs bg-slate-100 px-1 py-0.5 rounded text-slate-600">
+                        {user.password || '••••••'}
+                      </code>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-1">
+                        {user.config.showTemperatureChart && <span className="w-2 h-2 rounded-full bg-cyan-400" title="Temp Chart"></span>}
+                        {user.config.showPressureChart && <span className="w-2 h-2 rounded-full bg-indigo-400" title="Pressure Chart"></span>}
+                        {user.config.allowSetpointControl && <span className="w-2 h-2 rounded-full bg-emerald-400" title="Control"></span>}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors"
-                          title="Delete user"
+                          onClick={() => window.location.hash = `#/admin/design/${user.id}`}
+                          className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+                          title="Design Dashboard"
                         >
-                          <Trash2 size={16} />
+                          <Settings size={16} />
                         </button>
-                      )}
+                        <button
+                          onClick={() => openEditModal(user)}
+                          className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+                          title="Edit user"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        {user.role !== UserRole.ADMIN && (
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors"
+                            title="Delete user"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <Search size={32} className="text-slate-300" />
+                      <p>No users found matching "{searchQuery}"</p>
                     </div>
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -275,36 +324,40 @@ const AdminDashboard: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div className="space-y-4">
-                {/* Company ID & Password - only for create */}
-                {!editingUser && (
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Company ID</label>
-                      <input
-                        required
-                        type="text"
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-[#009fe3] outline-none"
-                        placeholder="AF-XXXX"
-                        value={createCompanyId}
-                        onChange={e => setCreateCompanyId(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-                      <input
-                        required
-                        type="password"
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-[#009fe3] outline-none"
-                        placeholder="Min 6 characters"
-                        value={createPassword}
-                        onChange={e => setCreatePassword(e.target.value)}
-                      />
-                    </div>
+                {/* Identification Section */}
+                <div className={`grid grid-cols-2 gap-4 p-4 rounded-xl border ${editingUser ? 'bg-slate-50 border-slate-200' : 'bg-blue-50 border-blue-100'}`}>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Company ID</label>
+                    <input
+                      required
+                      type="text"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-[#009fe3] outline-none"
+                      placeholder="AF-XXXX"
+                      value={editingUser ? formData.companyId : createCompanyId}
+                      onChange={e => editingUser
+                        ? setFormData({ ...formData, companyId: e.target.value })
+                        : setCreateCompanyId(e.target.value)
+                      }
+                    />
                   </div>
-                )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <input
+                      required
+                      type="text"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-[#009fe3] outline-none"
+                      placeholder="Min 6 characters"
+                      value={editingUser ? formData.password : createPassword}
+                      onChange={e => editingUser
+                        ? setFormData({ ...formData, password: e.target.value })
+                        : setCreatePassword(e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                     <input
                       required
@@ -313,17 +366,6 @@ const AdminDashboard: React.FC = () => {
                       placeholder="Enter full name"
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
-                    <input
-                      required
-                      type="text"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none"
-                      placeholder="Enter username"
-                      value={formData.username}
-                      onChange={e => setFormData({ ...formData, username: e.target.value })}
                     />
                   </div>
                 </div>

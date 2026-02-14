@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import ClientDashboard from './pages/ClientDashboard';
 import ClientControls from './pages/ClientControls';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminUserDesigner from './pages/AdminUserDesigner';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import { User, UserRole, UserConfig, MqttConfig } from './types';
@@ -17,7 +18,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
@@ -28,7 +29,7 @@ const App: React.FC = () => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
@@ -54,11 +55,11 @@ const App: React.FC = () => {
       } else if (data) {
         const user: User = {
           id: data.id,
-          username: data.username,
+          companyId: data.company_id,
           name: data.full_name,
           role: data.role as UserRole,
           isActive: data.is_active,
-          config: data.config as UserConfig, // Type assertion might be needed if JSON comes back loosely typed
+          config: data.config as UserConfig,
           mqttConfig: data.mqtt_config as MqttConfig,
           language: data.language
         };
@@ -109,9 +110,10 @@ const App: React.FC = () => {
 
             {/* Admin Routes */}
             {currentUser.role === UserRole.ADMIN && (
-              <Route path="/admin" element={
-                <AdminDashboard />
-              } />
+              <>
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/design/:userId" element={<AdminUserDesigner />} />
+              </>
             )}
 
             {/* Client Routes */}
