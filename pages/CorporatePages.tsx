@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Info, FileText, Globe, Mail, MapPin, Cpu, Database, Server, Lock, Activity, Users } from 'lucide-react';
+import { ShieldCheck, Info, FileText, Globe, Mail, MapPin, Cpu, Database, Server, Lock, Activity, Users, Zap } from 'lucide-react';
+import { TRANSLATIONS } from '../constants';
 
 // ── Shared Page Wrapper ──
 const CorporatePageLayout: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
@@ -23,30 +24,32 @@ const CorporatePageLayout: React.FC<{ title: string; icon: React.ReactNode; chil
 
 // ── 1. ABOUT PAGE ──
 export const AboutPage: React.FC = () => {
+    const language = (localStorage.getItem('AFRIC_FROID_LANG') as 'en' | 'fr') || 'fr';
+    const t = TRANSLATIONS[language];
     return (
-        <CorporatePageLayout title="About Platform" icon={<Info size={28} />}>
+        <CorporatePageLayout title={t.aboutPlatform} icon={<Info size={28} />}>
             <div className="space-y-12">
                 {/* Product Section */}
                 <section className="space-y-6">
                     <div className="flex items-center gap-2 text-[#002060]">
                         <Activity size={20} className="text-[#009fe3]" />
-                        <h3 className="text-xl font-bold uppercase tracking-wider">Product Information</h3>
+                        <h3 className="text-xl font-bold uppercase tracking-wider">{t.productInfo}</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-1">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Application Name</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.appName}</span>
                             <p className="text-lg font-bold text-slate-900">Afric Froid IIoT Cloud</p>
                         </div>
                         <div className="space-y-1">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Short Description</span>
-                            <p className="text-sm font-medium text-slate-600">Industrial IoT Platform for Real-time Monitoring & Remote Control of Refrigeration Systems.</p>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.appDescription}</span>
+                            <p className="text-sm font-medium text-slate-600">{t.appDescriptionText}</p>
                         </div>
                         <div className="space-y-1">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Version / Build</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.versionBuild}</span>
                             <p className="text-slate-900 font-mono font-bold">1.1.0 <span className="text-slate-300 mx-2">|</span> 2026.02.14-REV1</p>
                         </div>
                         <div className="space-y-1">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Release Date</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t.releaseDate}</span>
                             <p className="text-slate-900 font-bold font-medium">February 14, 2026 (Alarm System Release)</p>
                         </div>
                     </div>
@@ -58,16 +61,16 @@ export const AboutPage: React.FC = () => {
                 <section className="space-y-6">
                     <div className="flex items-center gap-2 text-[#002060]">
                         <Cpu size={20} className="text-[#009fe3]" />
-                        <h3 className="text-xl font-bold uppercase tracking-wider">Technical Specifications</h3>
+                        <h3 className="text-xl font-bold uppercase tracking-wider">{t.techSpecs}</h3>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {[
-                            { label: 'MQTT Protocol', val: 'v3.1.1 / v5', icon: <Globe size={16} /> },
-                            { label: 'Security', val: 'TLS/SSL Encryption', icon: <Lock size={16} /> },
-                            { label: 'Capacity', val: 'Multi-broker Ready', icon: <Users size={16} /> },
-                            { label: 'Architecture', val: 'Real-time State-Persistent', icon: <Activity size={16} /> },
-                            { label: 'Database', val: 'PostgreSQL (Supabase)', icon: <Database size={16} /> },
-                            { label: 'Hosting', val: 'Dedicated Cloud', icon: <Server size={16} /> },
+                            { label: t.specMqtt, val: 'v3.1.1 / v5', icon: <Globe size={16} /> },
+                            { label: t.specSecurity, val: 'TLS/SSL Encryption', icon: <Lock size={16} /> },
+                            { label: t.specCapacity, val: 'Multi-broker Ready', icon: <Users size={16} /> },
+                            { label: t.specArchitecture, val: 'Real-time State-Persistent', icon: <Activity size={16} /> },
+                            { label: t.specDatabase, val: 'PostgreSQL (Supabase)', icon: <Database size={16} /> },
+                            { label: t.specHosting, val: 'Dedicated Cloud', icon: <Server size={16} /> },
                         ].map((spec, i) => (
                             <div key={i} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100/50">
                                 <div className="text-[#009fe3]">{spec.icon}</div>
@@ -87,42 +90,52 @@ export const AboutPage: React.FC = () => {
                     <section className="space-y-6">
                         <div className="flex items-center gap-2 text-[#002060]">
                             <Globe size={20} className="text-[#009fe3]" />
-                            <h3 className="text-xl font-bold uppercase tracking-wider">Company Information</h3>
+                            <h3 className="text-xl font-bold uppercase tracking-wider">{t.companyInfo}</h3>
                         </div>
                         <div className="space-y-4">
                             <div className="flex items-start gap-4">
                                 <MapPin size={18} className="text-slate-400 mt-1" />
                                 <div>
-                                    <p className="font-bold text-slate-900">Afric Froid HQ</p>
+                                    <p className="font-bold text-slate-900">{t.addressInfo}</p>
                                     <p className="text-sm text-slate-500">4 rue Hamouda Pacha, ZI Ksar Said<br />2086 Tunisia</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
                                 <Mail size={18} className="text-slate-400" />
-                                <a href="mailto:commercial@frigoindus.net" className="text-sm font-bold text-[#009fe3] hover:underline">commercial@frigoindus.net</a>
+                                <a href="mailto:be.conception02@frigoindus.net" className="text-sm font-bold text-[#009fe3] hover:underline">be.conception02@frigoindus.net</a>
                             </div>
                             <div className="flex items-center gap-4">
                                 <Globe size={18} className="text-slate-400" />
                                 <a href="https://www.frigoindus.net" target="_blank" rel="noreferrer noopener" className="text-sm font-bold text-slate-700 hover:text-[#009fe3]">www.frigoindus.net</a>
                             </div>
-                            <p className="text-[10px] font-bold text-slate-300 mt-4 italic">© 2026 Afric Froid. All rights reserved.</p>
+                            <p className="text-[10px] font-bold text-slate-300 mt-4 italic">{t.allRightsReserved}</p>
                         </div>
                     </section>
 
-                    <section className="space-y-4 p-6 bg-gradient-to-br from-[#002060] to-[#003080] rounded-[20px] text-white shadow-xl shadow-blue-900/10 self-start">
-                        <div className="flex items-center gap-2">
-                            <ShieldCheck size={18} />
-                            <h3 className="text-sm font-bold uppercase tracking-wider">Development Credits</h3>
+                    <section className="space-y-8 p-10 bg-slate-900 rounded-[28px] text-white shadow-2xl relative overflow-hidden self-start border border-slate-800">
+                        {/* Decorative background elements */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-[#009fe3]/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#002060]/30 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
+                        
+                        {/* Main "Powered By" Focus */}
+                        <div className="relative z-10 flex flex-col items-center text-center gap-4 border-b border-slate-700/50 pb-8">
+                            <div className="p-4 bg-slate-800/80 rounded-2xl text-[#009fe3] ring-1 ring-white/5 shadow-inner">
+                                <Zap size={32} />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-2">{t.poweredBy}</p>
+                                <h2 className="text-4xl font-black tracking-tight text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                                    Afric Froid
+                                </h2>
+                            </div>
                         </div>
-                        <div className="space-y-3">
-                            <div>
-                                <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-1">Architecture & Lead Development</p>
-                                <p className="text-lg font-black leading-tight">Ben AbdelJelil Ahmed</p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-1">In Partnership With</p>
-                                <p className="text-sm font-bold">Afric Froid</p>
-                            </div>
+                        
+                        {/* Subtle Developer Footnote */}
+                        <div className="relative z-10 flex flex-col items-center text-center pt-2">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                                {t.architectureLead}
+                            </p>
+                            <p className="text-xs font-medium text-slate-400">Ben AbdelJelil Ahmed</p>
                         </div>
                     </section>
                 </div>
@@ -131,14 +144,15 @@ export const AboutPage: React.FC = () => {
 
                 {/* Legal Links Footer */}
                 <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-xs font-bold uppercase tracking-widest text-slate-400">
-                    <Link to="/terms" className="hover:text-[#009fe3] transition-colors">Terms of Service</Link>
+                    <Link to="/terms" className="hover:text-[#009fe3] transition-colors">{t.terms}</Link>
                     <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                    <Link to="/privacy" className="hover:text-[#009fe3] transition-colors">Privacy Policy</Link>
+                    <Link to="/privacy" className="hover:text-[#009fe3] transition-colors">{t.privacy}</Link>
                 </div>
             </div>
         </CorporatePageLayout>
     );
 }
+
 
 // ── 2. TERMS OF SERVICE ──
 export const TermsOfService: React.FC = () => {

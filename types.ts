@@ -173,12 +173,30 @@ export interface PLCTelemetry {
 }
 
 export interface Translation {
+  // Navigation & Sessions
   dashboard: string;
   controls: string;
   settings: string;
   users: string;
   logout: string;
+  about: string;
+  terms: string;
+  privacy: string;
   welcome: string;
+
+  // Login Page
+  clientPortal: string;
+  industrialMonitoring: string;
+  companyId: string;
+  password: string;
+  rememberDevice: string;
+  forgotAccess: string;
+  accessDashboard: string;
+  visitWebsite: string;
+  systemOperational: string;
+  tagline: string;
+
+  // Dashboard & Controls
   systemStatus: string;
   temperature: string;
   pressure: string;
@@ -187,12 +205,49 @@ export interface Translation {
   inactive: string;
   save: string;
   cancel: string;
-  about: string;
   alarms: string;
-  terms: string;
-  privacy: string;
   acknowledge: string;
   clearAll: string;
   noActiveAlarms: string;
   viewHistory: string;
+  
+  // Settings
+  preferences: string;
+  language: string;
+  selectLanguage: string;
+  security: string;
+  currentPassword: string;
+  newPassword: string;
+  updatePassword: string;
+  // Forgot Access Modal
+  forgotAccessTitle: string;
+  forgotAccessDescription: string;
+  contactSupport: string;
+  close: string;
+  passwordChangedSuccess: string;
+  passwordChangeError: string;
+  confirmPassword: string;
+
+  // Corporate Pages
+  aboutPlatform: string;
+  productInfo: string;
+  appName: string;
+  appDescription: string;
+  appDescriptionText: string;
+  versionBuild: string;
+  releaseDate: string;
+  techSpecs: string;
+  specMqtt: string;
+  specSecurity: string;
+  specCapacity: string;
+  specArchitecture: string;
+  specDatabase: string;
+  specHosting: string;
+  companyInfo: string;
+  addressInfo: string;
+  allRightsReserved: string;
+  devCredits: string;
+  architectureLead: string;
+  inPartnershipWith: string;
+  poweredBy: string;
 }

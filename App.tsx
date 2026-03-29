@@ -61,10 +61,23 @@ const App: React.FC = () => {
           name: data.full_name,
           role: data.role as UserRole,
           isActive: data.is_active,
-          config: data.config as UserConfig,
           mqttConfig: data.mqtt_config as MqttConfig,
-          language: data.language
+          language: (() => {
+            const stored = localStorage.getItem('AFRIC_FROID_LANG');
+            if (stored === 'en' || stored === 'fr') return stored;
+            return (data.language as 'en' | 'fr') || 'en';
+          })()
         };
+        
+        // Always sync TO profile if localStorage is different (to keep DB updated)
+        const localLang = localStorage.getItem('AFRIC_FROID_LANG');
+        if (localLang && localLang !== data.language) {
+          await supabase.from('profiles').update({ language: localLang }).eq('id', userId);
+        } else if (!localLang && data.language) {
+          // If fresh device, take from profile
+          localStorage.setItem('AFRIC_FROID_LANG', data.language);
+        }
+
         setCurrentUser(user);
 
         // Connect MQTT if config exists
