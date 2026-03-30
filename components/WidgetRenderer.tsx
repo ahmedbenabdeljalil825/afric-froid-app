@@ -139,8 +139,18 @@ const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?:
     const config = widget.config as GaugeConfig;
     const min = config?.min ?? 0;
     const max = config?.max ?? 100;
-    const percentage = ((value - min) / (max - min)) * 100;
-    const angle = -135 + (percentage / 100) * 270; // -135 to +135 degrees
+    
+    // Bounded value to ensure needle and arc stay within bounds
+    const boundedValue = Math.min(Math.max(value, min), max);
+    const percentage = ((boundedValue - min) / (max - min)) * 100;
+    
+    // For a semi-circle (180 degrees), angle goes from -90 to +90
+    const angle = -90 + (percentage / 100) * 180;
+    
+    // Arc length for semi-circle with radius 80 = pi * r = ~251.32
+    const arcLength = 251.32;
+    // Stroke offset calculates how much of the stroke should be hidden
+    const dashOffset = arcLength - (percentage / 100) * arcLength;
 
     return (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col items-center justify-center">
@@ -151,39 +161,46 @@ const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?:
                     content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-3">{widget.dataLabel || widget.variableName}</p>
-            <div className="relative w-[160px] h-[100px]">
-                <svg viewBox="0 0 200 120" className="w-full h-full">
+            <p className="text-[10px] text-slate-400 font-mono mb-2">{widget.dataLabel || widget.variableName}</p>
+            
+            <div className="w-[160px] h-[90px] mt-2 relative">
+                <svg viewBox="0 0 200 120" className="w-full h-full overflow-visible">
                     {/* Background arc */}
                     <path
-                        d="M 20 110 A 80 80 0 1 1 180 110"
+                        d="M 20 110 A 80 80 0 0 1 180 110"
                         fill="none" stroke="#e2e8f0" strokeWidth="16" strokeLinecap="round"
                     />
                     {/* Value arc */}
                     <path
-                        d="M 20 110 A 80 80 0 1 1 180 110"
+                        d="M 20 110 A 80 80 0 0 1 180 110"
                         fill="none" stroke={color.primary} strokeWidth="16" strokeLinecap="round"
-                        strokeDasharray={`${percentage * 2.83} 283`}
+                        strokeDasharray={arcLength}
+                        strokeDashoffset={dashOffset}
                         className="transition-all duration-1000 ease-in-out"
                     />
                     {/* Needle */}
-                    <g className="transition-transform duration-1000 ease-in-out origin-center">
+                    <g className="transition-transform duration-1000 ease-in-out origin-[100px_110px]">
                         <line
                             x1="100" y1="110" x2="100" y2="40"
-                            stroke="#1e293b" strokeWidth="3" strokeLinecap="round"
+                            stroke="#1e293b" strokeWidth="4" strokeLinecap="round"
                             transform={`rotate(${angle} 100 110)`}
                         />
                     </g>
                     {/* Center circle */}
-                    <circle cx="100" cy="110" r="8" fill="#1e293b" />
+                    <circle cx="100" cy="110" r="10" fill="#1e293b" />
                     <circle cx="100" cy="110" r="4" fill="white" />
                 </svg>
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center">
-                    <span className="text-2xl font-black text-slate-900">{value}</span>
-                    <span className="text-xs text-slate-400 ml-1">{config?.unit || ''}</span>
+            </div>
+            
+            {/* Value display moved below the gauge center to avoid needle overlapping */}
+            <div className="mt-1 flex flex-col items-center justify-center text-center">
+                <div>
+                    <span className="text-3xl font-black text-slate-900">{value}</span>
+                    <span className="text-sm text-slate-400 ml-1 font-bold">{config?.unit || ''}</span>
                 </div>
             </div>
-            <div className="flex justify-between w-full mt-2 px-2">
+            
+            <div className="flex justify-between w-full mt-2 px-1">
                 <span className="text-[10px] text-slate-400 font-bold">{min}</span>
                 <span className="text-[10px] text-slate-400 font-bold">{max}</span>
             </div>
@@ -197,7 +214,7 @@ const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; current
     const status = currentValue === true || currentValue === '1' || currentValue === 'on' || currentValue === 'RUNNING';
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 h-full flex flex-col items-center justify-center text-center">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col items-center justify-center text-center">
             <div className="flex items-center gap-2 mb-4">
                 <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
                 <InfoTooltip
@@ -205,15 +222,16 @@ const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; current
                     content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                 />
             </div>
-            <div className={`w-12 h-12 rounded-full shadow-inner relative ${status ? 'bg-emerald-500 shadow-emerald-400/50' : 'bg-slate-200'}`}>
+            <div className={`w-16 h-16 rounded-full shadow-lg relative ${status ? 'bg-emerald-500 shadow-emerald-400/30' : 'bg-slate-200'}`}>
                 {status && (
                     <div className="absolute inset-0 rounded-full animate-ping bg-emerald-400 opacity-20" />
                 )}
-                <div className={`absolute top-1 left-3 w-3 h-1.5 bg-white/40 rounded-full blur-[1px]`} />
+                <div className="absolute top-2 left-4 w-4 h-2 bg-white/30 rounded-full blur-[1px]" />
             </div>
-            <p className={`mt-4 text-xs font-black tracking-widest ${status ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <p className={`mt-4 text-sm font-black tracking-widest ${status ? 'text-emerald-600' : 'text-slate-400'}`}>
                 {status ? 'ACTIVE' : 'INACTIVE'}
             </p>
+            <p className="text-[10px] text-slate-400 font-mono mt-1">{widget.dataLabel || widget.variableName}</p>
         </div>
     );
 };
@@ -235,27 +253,28 @@ const ProgressBarWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
     }, [pct]);
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 h-full flex flex-col justify-center">
-            <div className="flex justify-between items-end mb-2">
-                <div className="flex items-center gap-2">
-                    <div>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col justify-center">
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <div className="flex items-center gap-2">
                         <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
-                        <p className="text-[10px] text-slate-400">{widget.dataLabel || widget.variableName}</p>
+                        <InfoTooltip
+                            title="Configuration"
+                            content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
+                        />
                     </div>
-                    <InfoTooltip
-                        title="Configuration"
-                        content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
-                    />
+                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{widget.dataLabel || widget.variableName}</p>
                 </div>
-                <div className="text-right">
-                    <span className="text-xl font-black text-slate-900">{value}</span>
-                    <span className="text-[10px] text-slate-400 ml-1">{config?.unit}</span>
+                <div className="text-right shrink-0 ml-4">
+                    <span className="text-2xl font-black text-slate-900">{value}</span>
+                    <span className="text-xs text-slate-400 ml-1 font-bold">{config?.unit}</span>
+                    <p className="text-[10px] text-slate-400 font-bold">{Math.round(pct)}%</p>
                 </div>
             </div>
-            <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
                 <div
                     ref={barRef}
-                    className={`h-full bg-gradient-to-r ${color.gradient} transition-all duration-1000`}
+                    className={`h-full bg-gradient-to-r ${color.gradient} rounded-full transition-all duration-1000`}
                 />
             </div>
             <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
@@ -342,28 +361,28 @@ const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; cur
     const min = config?.min ?? 0;
     const max = config?.max ?? 100;
     const pct = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
-    const radius = 36;
+    const radius = 42;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (pct / 100) * circumference;
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 h-full flex flex-col items-center justify-center">
-            <div className="flex items-center gap-2 mb-2">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col items-center justify-center">
+            <div className="flex items-center gap-2 mb-3">
                 <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
                 <InfoTooltip
                     title="Configuration"
                     content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                 />
             </div>
-            <div className="relative w-28 h-28">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 112 112">
+            <div className="relative w-32 h-32">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
                     <circle
-                        cx="56" cy="56" r={radius}
-                        fill="none" stroke="#f1f5f9" strokeWidth="8"
+                        cx="60" cy="60" r={radius}
+                        fill="none" stroke="#f1f5f9" strokeWidth="10"
                     />
                     <circle
-                        cx="56" cy="56" r={radius}
-                        fill="none" stroke={color.primary} strokeWidth="8"
+                        cx="60" cy="60" r={radius}
+                        fill="none" stroke={color.primary} strokeWidth="10"
                         strokeDasharray={circumference}
                         strokeDashoffset={offset}
                         strokeLinecap="round"
@@ -371,10 +390,11 @@ const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; cur
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-black text-slate-900">{value}</span>
-                    <span className="text-[10px] text-slate-400">{config?.unit}</span>
+                    <span className="text-2xl font-black text-slate-900">{value}</span>
+                    <span className="text-[10px] text-slate-400 font-bold">{config?.unit}</span>
                 </div>
             </div>
+            <p className="text-[10px] text-slate-400 font-mono mt-2">{widget.dataLabel || widget.variableName}</p>
         </div>
     );
 };
@@ -968,10 +988,10 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     };
 
     return (
-        <div className={`relative h-full transition-all duration-500 ${isAlarm ? 'ring-4 ring-red-500/50 rounded-2xl animate-pulse ring-offset-2' : ''}`}>
+        <div className={`relative h-full transition-all duration-500 ${isAlarm ? 'ring-2 ring-red-500/40 rounded-2xl ring-offset-1' : ''}`}>
             {isAlarm && (
-                <div className="absolute -top-3 -right-3 z-20 bg-red-600 text-white p-1.5 rounded-full shadow-lg animate-bounce border-2 border-white">
-                    <AlertTriangle size={16} />
+                <div className="absolute -top-2 -right-2 z-20 bg-red-600 text-white p-1.5 rounded-full shadow-lg animate-bounce border-2 border-white">
+                    <AlertTriangle size={14} />
                 </div>
             )}
             {renderWidget()}

@@ -14,7 +14,14 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
   const [liveData, setLiveData] = useState<Record<string, any>>({});
   const [historyData, setHistoryData] = useState<Record<string, any[]>>({});
   const [loading, setLoading] = useState(true);
+  const [mqttStatus, setMqttStatus] = useState(mqttService.status);
   const t = TRANSLATIONS[user.language];
+
+  // Subscribe to real-time MQTT connection status
+  useEffect(() => {
+    const unsub = mqttService.onStatusChange(setMqttStatus);
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     let activeSubscriptions: (() => void)[] = [];
@@ -26,6 +33,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
           .select('*')
           .eq('user_id', user.id)
           .eq('is_active', true)
+          .eq('category', 'READING')
           .order('position', { ascending: true });
 
         if (error) throw error;
@@ -73,8 +81,8 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
               Object.keys(data).forEach(key => {
                 const value = data[key];
                 if (typeof value === 'number') {
-                  const timestamp = new Date().toLocaleTimeString();
-                  const point = { time: timestamp, value };
+                  const timestamp = Date.now();
+                  const point = { timestamp, value };
                   if (!nextHistory[key]) nextHistory[key] = [];
                   nextHistory[key] = [...nextHistory[key], point].slice(-20);
                 }
@@ -117,10 +125,22 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
         </div>
         <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm">
           <div className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+              mqttStatus === 'connected' ? 'bg-emerald-400' :
+              mqttStatus === 'connecting' ? 'bg-amber-400' :
+              mqttStatus === 'error' ? 'bg-red-400' : 'bg-slate-300'
+            }`}></span>
+            <span className={`relative inline-flex rounded-full h-3 w-3 ${
+              mqttStatus === 'connected' ? 'bg-emerald-500' :
+              mqttStatus === 'connecting' ? 'bg-amber-500' :
+              mqttStatus === 'error' ? 'bg-red-500' : 'bg-slate-400'
+            }`}></span>
           </div>
-          <span className="text-sm font-bold text-slate-700">PLC ONLINE</span>
+          <span className="text-sm font-bold text-slate-700">
+            {mqttStatus === 'connected' ? 'PLC ONLINE' :
+             mqttStatus === 'connecting' ? 'CONNECTING...' :
+             mqttStatus === 'error' ? 'CONN. ERROR' : 'OFFLINE'}
+          </span>
           <span className="text-xs text-slate-400 font-mono border-l pl-3 ml-1">Live Feed</span>
         </div>
       </div>

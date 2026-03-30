@@ -1,23 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
-import { Alarm, Profile } from '../types';
-import { AlertCircle, CheckCircle2, Clock, Filter, Trash2 } from 'lucide-react';
+import { Alarm, User } from '../types';
+import { AlertCircle, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 
-const AlarmHistoryPage: React.FC = () => {
+interface AlarmHistoryPageProps {
+    user: User;
+}
+
+const AlarmHistoryPage: React.FC<AlarmHistoryPageProps> = ({ user }) => {
     const [alarms, setAlarms] = useState<Alarm[]>([]);
     const [loading, setLoading] = useState(true);
-    const [currentUser, setCurrentUser] = useState<any>(null);
 
     useEffect(() => {
-        const fetchSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                setCurrentUser(session.user);
-                fetchAlarms(session.user.id);
-            }
-        };
-        fetchSession();
-    }, []);
+        fetchAlarms(user.id);
+    }, [user.id]);
 
     const fetchAlarms = async (userId: string) => {
         setLoading(true);
@@ -52,11 +48,11 @@ const AlarmHistoryPage: React.FC = () => {
         const { error } = await supabase
             .from('alarms')
             .delete()
-            .eq('user_id', currentUser.id)
+            .eq('user_id', user.id)
             .neq('status', 'ACTIVE'); // Keep active alarms
 
         if (!error) {
-            fetchAlarms(currentUser.id);
+            fetchAlarms(user.id);
         }
     };
 
@@ -83,6 +79,20 @@ const AlarmHistoryPage: React.FC = () => {
         );
     };
 
+    const getSeverityBadge = (severity: string) => {
+        const styles: Record<string, string> = {
+            LOW: 'text-slate-500',
+            MEDIUM: 'text-amber-600',
+            HIGH: 'text-orange-600',
+            CRITICAL: 'text-red-600',
+        };
+        return (
+            <p className={`text-[10px] font-black tracking-wider ${styles[severity] || 'text-red-500'}`}>
+                {severity}
+            </p>
+        );
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
@@ -92,7 +102,7 @@ const AlarmHistoryPage: React.FC = () => {
                 </div>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => fetchAlarms(currentUser?.id)}
+                        onClick={() => fetchAlarms(user.id)}
                         className="p-2 bg-white text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
                         title="Refresh"
                     >
@@ -110,7 +120,7 @@ const AlarmHistoryPage: React.FC = () => {
 
             {loading ? (
                 <div className="flex justify-center py-20">
-                    <div className="w-10 h-10 border-4 border-frost-100 border-t-frost-500 rounded-full animate-spin"></div>
+                    <div className="w-10 h-10 border-4 border-[#009fe3]/20 border-t-[#009fe3] rounded-full animate-spin"></div>
                 </div>
             ) : alarms.length === 0 ? (
                 <div className="bg-white rounded-3xl p-20 text-center border-2 border-dashed border-slate-100">
@@ -144,7 +154,8 @@ const AlarmHistoryPage: React.FC = () => {
                                         <td className="px-6 py-4">
                                             <div>
                                                 <p className="font-bold text-slate-900 text-sm">{alarm.variableName}</p>
-                                                <p className="text-[10px] font-black text-red-500 tracking-wider">CRITICAL {alarm.alarmType}</p>
+                                                {getSeverityBadge(alarm.severity)}
+                                                <p className="text-[10px] text-slate-400 font-semibold">{alarm.alarmType}</p>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">

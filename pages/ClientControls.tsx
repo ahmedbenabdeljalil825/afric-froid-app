@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, PLCTelemetry } from '../types';
+import { User, PLCTelemetry, Widget } from '../types';
 import { mqttService } from '../services/mqttService';
 import { Power, Thermometer, AlertTriangle, Save, RefreshCw, Sliders } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
+import { supabase } from '../services/supabase';
+import { WidgetRenderer } from '../components/WidgetRenderer';
 
 interface ClientControlsProps {
   user: User;
@@ -11,31 +13,105 @@ interface ClientControlsProps {
 const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
   const [telemetry, setTelemetry] = useState<PLCTelemetry | null>(null);
   const [targetSetpoint, setTargetSetpoint] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(false);
+  
+  // Dynamic widgets state
+  const [widgets, setWidgets] = useState<Widget[]>([]);
+  const [liveData, setLiveData] = useState<Record<string, any>>({});
+  const [loadingWidgets, setLoadingWidgets] = useState(true);
+  
   const t = TRANSLATIONS[user.language];
 
   useEffect(() => {
-    const topic = user.mqttConfig?.topics.telemetry || 'telemetry';
-    const unsubscribe = mqttService.subscribe((data) => {
-      setTelemetry(data);
-      if (targetSetpoint === '' && data.setpoint !== undefined) {
-        setTargetSetpoint(data.setpoint.toString());
+    let activeSubscriptions: (() => void)[] = [];
+
+    const fetchAndSubscribe = async () => {
+      try {
+        // Fetch Control Widgets
+        const { data, error } = await supabase
+          .from('widgets')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .eq('category', 'CONTROLLING')
+          .order('position', { ascending: true });
+
+        if (error) throw error;
+
+        const fetchedWidgets: Widget[] = (data || []).map((w: any) => ({
+          id: w.id,
+          userId: w.user_id,
+          name: w.name,
+          category: w.category,
+          widgetType: w.widget_type,
+          mqttTopic: w.mqtt_topic,
+          mqttAction: w.mqtt_action,
+          qos: w.qos,
+          retain: w.retain,
+          variableName: w.variable_name,
+          dataLabel: w.data_label,
+          config: w.config,
+          position: w.position,
+          isActive: w.is_active,
+          alarmEnabled: w.alarm_enabled,
+          alarmMin: w.alarm_min,
+          alarmMax: w.alarm_max
+        }));
+
+        setWidgets(fetchedWidgets);
+
+        // Collect all unique topics
+        const uniqueTopics = new Set<string>();
+        fetchedWidgets.forEach(w => uniqueTopics.add(w.mqttTopic));
+
+        // Always add telemetry for hardcoded controls
+        const telemetryTopic = user.mqttConfig?.topics.telemetry || 'telemetry';
+        uniqueTopics.add(telemetryTopic);
+
+        uniqueTopics.forEach(topic => {
+          const unsub = mqttService.subscribe((data: any) => {
+            // Update live data for custom widgets
+            setLiveData(prev => ({ ...prev, ...data }));
+
+            // Update telemetry state for hardcoded components if this is the telemetry topic
+            if (topic === telemetryTopic) {
+              setTelemetry(data);
+              // Auto-set the setpoint input the first time we see it
+              setTargetSetpoint(prev => {
+                if (prev === '' && data.setpoint !== undefined) {
+                  return data.setpoint.toString();
+                }
+                return prev;
+              });
+            }
+          }, topic);
+          activeSubscriptions.push(unsub);
+        });
+
+      } catch (err) {
+        console.error('Error fetching controls:', err);
+      } finally {
+        setLoadingWidgets(false);
       }
-    }, topic);
-    return () => unsubscribe();
-  }, [targetSetpoint, user.mqttConfig?.topics.telemetry]);
+    };
+
+    fetchAndSubscribe();
+
+    return () => {
+      activeSubscriptions.forEach(unsub => unsub());
+    };
+  }, [user.id, user.mqttConfig?.topics.telemetry]);
 
   const handleSetpointChange = (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetSetpoint || !telemetry) return;
 
-    setLoading(true);
+    setLoadingAction(true);
     const topic = user.mqttConfig?.topics.telemetry || 'telemetry';
 
-    // Simulate network delay
     setTimeout(() => {
       mqttService.publishVariableUpdate(topic, 'setpoint', Number(targetSetpoint));
-      setLoading(false);
+      setLoadingAction(false);
     }, 800);
   };
 
@@ -46,7 +122,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
     mqttService.publishVariableUpdate(topic, 'status', newState);
   };
 
-  if (!telemetry) {
+  if (loadingWidgets) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center text-slate-400 space-y-4">
         <div className="w-12 h-12 border-4 border-[#009fe3]/30 border-t-[#009fe3] rounded-full animate-spin"></div>
@@ -62,7 +138,37 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
         <p className="text-slate-500 font-medium">Remote operation & Configuration</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Dynamic Widgets Rendered Here */}
+      {widgets.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr mb-12">
+          {widgets.map((widget, index) => {
+             const val = liveData[widget.variableName] !== undefined ? liveData[widget.variableName] : undefined;
+             
+             return (
+               <div key={widget.id}>
+                 <WidgetRenderer
+                   widget={widget}
+                   colorIndex={index}
+                   currentData={val}
+                   isPreview={false}
+                 />
+               </div>
+             );
+          })}
+        </div>
+      )}
+
+      {/* Hardcoded Controls */}
+      <h3 className="text-xl font-bold text-slate-800 border-b border-slate-100 pb-2 mt-8">System Overrides</h3>
+      
+      {!telemetry && (
+        <div className="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-200 flex items-center gap-3">
+          <AlertTriangle size={20} />
+          <p className="text-sm font-medium">Waiting for direct telemetry from the unit to enable system overrides...</p>
+        </div>
+      )}
+
+      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 ${!telemetry ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
         {/* Setpoint Control Card */}
         {user.config?.allowSetpointControl && (
           <div className="bg-white rounded-[30px] p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-shadow duration-300 relative overflow-hidden group">
@@ -77,7 +183,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
                   <h3 className="text-xl font-bold text-slate-900">Temperature Setpoint</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Current Target</span>
-                    <span className="px-2 py-0.5 bg-slate-100 rounded-md text-slate-700 font-bold text-xs">{telemetry.setpoint}°C</span>
+                    <span className="px-2 py-0.5 bg-slate-100 rounded-md text-slate-700 font-bold text-xs">{telemetry?.setpoint ?? '--'}°C</span>
                   </div>
                 </div>
               </div>
@@ -104,10 +210,10 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loadingAction || !telemetry}
                   className="w-full bg-gradient-to-r from-[#002060] to-[#009fe3] hover:from-[#003080] hover:to-[#00b0f0] text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-900/10 hover:shadow-blue-900/30 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  {loading ? <RefreshCw className="animate-spin" size={24} /> : <Save size={24} />}
+                  {loadingAction ? <RefreshCw className="animate-spin" size={24} /> : <Save size={24} />}
                   <span>{t.save}</span>
                 </button>
               </form>
@@ -117,12 +223,12 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 
         {/* System Power Card */}
         <div className="bg-white rounded-[30px] p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-shadow duration-300 relative overflow-hidden group">
-          <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-[100px] -mr-8 -mt-8 transition-colors duration-500 ${telemetry.status === 'RUNNING' ? 'bg-emerald-50' : 'bg-slate-100'}`}></div>
+          <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-[100px] -mr-8 -mt-8 transition-colors duration-500 ${telemetry?.status === 'RUNNING' ? 'bg-emerald-50' : 'bg-slate-100'}`}></div>
 
           <div className="relative z-10 flex flex-col h-full justify-between">
             <div>
               <div className="flex items-center gap-4 mb-8">
-                <div className={`p-4 rounded-2xl ring-4 transition-colors duration-500 ${telemetry.status === 'RUNNING' ? 'bg-emerald-50 text-emerald-600 ring-emerald-50/50' : 'bg-slate-100 text-slate-500 ring-slate-100/50'
+                <div className={`p-4 rounded-2xl ring-4 transition-colors duration-500 ${telemetry?.status === 'RUNNING' ? 'bg-emerald-50 text-emerald-600 ring-emerald-50/50' : 'bg-slate-100 text-slate-500 ring-slate-100/50'
                   }`}>
                   <Power size={32} />
                 </div>
@@ -135,12 +241,12 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
               <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 mb-8">
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Operational State</span>
-                  <span className={`text-xl font-black ${telemetry.status === 'RUNNING' ? 'text-emerald-600' : 'text-slate-500'
+                  <span className={`text-xl font-black ${telemetry?.status === 'RUNNING' ? 'text-emerald-600' : 'text-slate-500'
                     }`}>
-                    {telemetry.status}
+                    {telemetry?.status || 'UNKNOWN'}
                   </span>
                 </div>
-                <div className={`w-3 h-3 rounded-full ${telemetry.status === 'RUNNING' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'
+                <div className={`w-3 h-3 rounded-full ${telemetry?.status === 'RUNNING' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'
                   }`}></div>
               </div>
             </div>
@@ -148,12 +254,13 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
             {user.config?.allowPowerControl ? (
               <button
                 onClick={togglePower}
-                className={`w-full py-5 rounded-2xl font-bold text-lg text-white transition-all shadow-xl hover:-translate-y-1 active:translate-y-0 ${telemetry.status === 'RUNNING'
+                disabled={!telemetry}
+                className={`w-full py-5 rounded-2xl font-bold text-lg text-white transition-all shadow-xl hover:-translate-y-1 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0 ${telemetry?.status === 'RUNNING'
                   ? 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-red-500/20'
                   : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 shadow-emerald-500/20'
                   }`}
               >
-                {telemetry.status === 'RUNNING' ? 'STOP SYSTEM' : 'START SYSTEM'}
+                {telemetry?.status === 'RUNNING' ? 'STOP SYSTEM' : 'START SYSTEM'}
               </button>
             ) : (
               <div className="flex items-start gap-4 p-5 bg-amber-50 text-amber-800 rounded-2xl border border-amber-100">

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, UserRole, UserConfig, MqttConfig } from '../types';
 import { Plus, Search, Edit2, Trash2, CheckCircle, XCircle, Settings, X, RefreshCw } from 'lucide-react';
 import { supabase } from '../services/supabase';
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,7 +19,7 @@ const AdminDashboard: React.FC = () => {
     role: UserRole.CLIENT,
     isActive: true,
     mqttConfig: {
-      brokerUrl: 'wss://broker.hivemq.com:8000/mqtt',
+      brokerUrl: 'wss://broker.emqx.io:8084/mqtt',
       topics: {
         telemetry: 'afric-froid/client/data',
         command: 'afric-froid/client/command'
@@ -75,7 +77,7 @@ const AdminDashboard: React.FC = () => {
       role: UserRole.CLIENT,
       isActive: true,
       mqttConfig: {
-        brokerUrl: 'wss://broker.hivemq.com:8000/mqtt',
+        brokerUrl: 'wss://broker.emqx.io:8084/mqtt',
         topics: {
           telemetry: 'afric-froid/client/data',
           command: 'afric-froid/client/command'
@@ -249,7 +251,7 @@ const AdminDashboard: React.FC = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => window.location.hash = `#/admin/design/${user.id}`}
+                          onClick={() => navigate(`/admin/design/${user.id}`)}
                           className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
                           title="Design Dashboard"
                         >

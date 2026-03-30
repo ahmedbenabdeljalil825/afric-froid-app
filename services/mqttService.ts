@@ -8,7 +8,7 @@ type StatusCallback = (status: 'connected' | 'disconnected' | 'connecting' | 'er
 class MQTTService {
     private client: MqttClient | null = null;
     private config: MqttConfig | null = null;
-    private onMessageCallback: MessageCallback | null = null;
+    private topicCallbacks: Map<string, Set<MessageCallback>> = new Map();
     private onStatusCallbacks: Set<StatusCallback> = new Set();
     private topicState: Record<string, any> = {};
     private monitoredWidgets: Widget[] = [];
@@ -32,29 +32,40 @@ class MQTTService {
             clean: true,
             reconnectPeriod: 1000,
             connectTimeout: 30 * 1000,
-            username: config.username,
-            password: config.password,
         };
+
+        if (config.username) options.username = config.username;
+        if (config.password) options.password = config.password;
 
         this.client = mqtt.connect(config.brokerUrl, options);
 
         this.client.on('connect', () => {
-            // console.log('MQTT Client Connected');
+            console.log(`[MQTT] Connected successfully to ${config.brokerUrl}`);
             this.updateStatus('connected');
             this.subscribeToInitialTopics();
         });
 
         this.client.on('error', (err: Error) => {
-            console.error('MQTT Connection Error:', err);
+            console.error('[MQTT] Connection Error:', err);
             this.updateStatus('error');
         });
 
         this.client.on('offline', () => {
+            console.warn('[MQTT] Client went offline');
             this.updateStatus('disconnected');
         });
 
         this.client.on('reconnect', () => {
+            console.log(`[MQTT] Attempting to reconnect to ${config.brokerUrl}...`);
             this.updateStatus('connecting');
+        });
+
+        this.client.on('close', () => {
+            console.warn('[MQTT] Connection closed');
+        });
+
+        this.client.on('disconnect', (packet) => {
+            console.warn('[MQTT] Disconnect packet received from broker:', packet);
         });
 
         this.client.on('message', (topic: string, message: Buffer) => {
@@ -73,19 +84,31 @@ class MQTTService {
     }
 
     // Allow dynamic subscription for widgets with custom topics
+    // Supports multiple simultaneous subscribers per topic
     subscribe(callback: MessageCallback, topic?: string): () => void {
         if (!this.client || !this.config) return () => { };
 
         const targetTopic = topic || this.config.topics.telemetry;
+
+        // Subscribe the MQTT client to the topic if not already subscribed
         this.client.subscribe(targetTopic, (err: Error | null) => {
             if (err) console.error('Dynamic subscription error:', err);
         });
-        this.onMessageCallback = callback;
+
+        // Add callback to the set for this topic
+        if (!this.topicCallbacks.has(targetTopic)) {
+            this.topicCallbacks.set(targetTopic, new Set());
+        }
+        this.topicCallbacks.get(targetTopic)!.add(callback);
 
         return () => {
-            // In a real app with many widgets, we'd track subscriber counts per topic
-            // For now, we just clear the main callback
-            this.onMessageCallback = null;
+            const callbacks = this.topicCallbacks.get(targetTopic);
+            if (callbacks) {
+                callbacks.delete(callback);
+                if (callbacks.size === 0) {
+                    this.topicCallbacks.delete(targetTopic);
+                }
+            }
         };
     }
 
@@ -99,9 +122,10 @@ class MQTTService {
             // Check for alarms
             this.checkThresholds(topic, payload);
 
-            // Notify UI
-            if (this.onMessageCallback) {
-                this.onMessageCallback(payload);
+            // Notify all subscribers for this specific topic
+            const topicSubs = this.topicCallbacks.get(topic);
+            if (topicSubs) {
+                topicSubs.forEach(cb => cb(payload));
             }
         } catch (e) {
             console.error('Failed to parse MQTT JSON:', e);
@@ -147,6 +171,7 @@ class MQTTService {
             this.client.end();
             this.client = null;
             this.topicState = {};
+            this.topicCallbacks.clear();
             this.updateStatus('disconnected');
         }
     }

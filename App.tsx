@@ -122,7 +122,20 @@ const App: React.FC = () => {
   // We can remove the state-lifting of `users` array since AdminDashboard should fetch its own list.
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-100">Loading...</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#001a4d]">
+        <svg viewBox="0 0 200 180" className="w-20 h-20 mb-6" xmlns="http://www.w3.org/2000/svg">
+          <g transform="translate(0,0)">
+            <path d="M30,170 L90,170 L120,40 L60,40 Z" fill="#002060" />
+            <path d="M95,130 L155,130 L185,0 L125,0 Z" fill="#009fe3" />
+            <text x="75" y="125" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="65" fill="white" textAnchor="middle">A</text>
+            <text x="140" y="85" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="65" fill="white" textAnchor="middle">F</text>
+          </g>
+        </svg>
+        <div className="w-8 h-8 border-[3px] border-[#009fe3]/30 border-t-[#009fe3] rounded-full animate-spin mb-4" />
+        <p className="text-[#009fe3]/60 text-xs font-bold tracking-widest uppercase">Loading System...</p>
+      </div>
+    );
   }
 
   return (
@@ -156,7 +169,7 @@ const App: React.FC = () => {
               <>
                 <Route path="/dashboard" element={<ClientDashboard user={currentUser} />} />
                 <Route path="/controls" element={<ClientControls user={currentUser} />} />
-                <Route path="/alarms" element={<AlarmHistoryPage />} />
+                <Route path="/alarms" element={<AlarmHistoryPage user={currentUser} />} />
               </>
             )}
 

@@ -116,7 +116,7 @@ export const AboutPage: React.FC = () => {
                         {/* Decorative background elements */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-[#009fe3]/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
                         <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#002060]/30 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
-                        
+
                         {/* Main "Powered By" Focus */}
                         <div className="relative z-10 flex flex-col items-center text-center gap-4 border-b border-slate-700/50 pb-8">
                             <div className="p-4 bg-slate-800/80 rounded-2xl text-[#009fe3] ring-1 ring-white/5 shadow-inner">
@@ -124,12 +124,12 @@ export const AboutPage: React.FC = () => {
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-2">{t.poweredBy}</p>
-                                <h2 className="text-4xl font-black tracking-tight text-white bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                                    Afric Froid
+                                <h2 className="text-4xl font-black tracking-tight text-white">
+                                    Afric <span className="text-[#009fe3]">Froid</span>
                                 </h2>
                             </div>
                         </div>
-                        
+
                         {/* Subtle Developer Footnote */}
                         <div className="relative z-10 flex flex-col items-center text-center pt-2">
                             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">

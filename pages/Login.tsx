@@ -44,7 +44,6 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
 
@@ -82,21 +81,8 @@ const Login: React.FC = () => {
     }
   };
 
-  // Custom style for the entrance animation
-  const animationStyle = `
-    @keyframes slideUpFade {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-enter {
-      opacity: 0;
-      animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    }
-  `;
-
   return (
     <div className="min-h-screen w-full bg-slate-100 flex items-center justify-center p-4 lg:p-8 font-sans">
-      <style>{animationStyle}</style>
       <div className="w-full max-w-6xl h-auto lg:min-h-[720px] bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col lg:flex-row ring-1 ring-slate-900/5 transition-all duration-500 hover:shadow-3xl relative">
         
         {/* Language Switcher - Floating */}
@@ -177,7 +163,7 @@ const Login: React.FC = () => {
                 <div className="space-y-2 group animate-enter delay-100">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-[0.15em] transition-colors duration-300 group-focus-within:text-[#009fe3]">{t.companyId}</label>
                   <div className="relative transform transition-all duration-500 group-focus-within:translate-x-1">
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#009fe3] transition-colors duration-300">
+                    <div className="absolute left-5 inset-y-0 flex items-center justify-center pointer-events-none text-slate-300 group-focus-within:text-[#009fe3] transition-colors duration-300">
                       <Hash size={20} />
                     </div>
                     <input
@@ -195,7 +181,7 @@ const Login: React.FC = () => {
                 <div className="space-y-2 group animate-enter delay-200">
                   <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-[0.15em] transition-colors duration-300 group-focus-within:text-[#009fe3]">{t.password}</label>
                   <div className="relative transform transition-all duration-500 group-focus-within:translate-x-1">
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#009fe3] transition-colors duration-300">
+                    <div className="absolute left-5 inset-y-0 flex items-center justify-center pointer-events-none text-slate-300 group-focus-within:text-[#009fe3] transition-colors duration-300">
                       <Lock size={20} />
                     </div>
                     <input
@@ -206,32 +192,21 @@ const Login: React.FC = () => {
                       placeholder="••••••••••••"
                       autoComplete="current-password"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#002060] transition-all p-2 rounded-xl hover:bg-slate-100 active:scale-90"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
+                    <div className="absolute right-4 inset-y-0 flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-slate-300 hover:text-[#002060] transition-all p-2 rounded-xl hover:bg-slate-100 active:scale-90"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Options */}
-              <div className="flex items-center justify-between animate-enter delay-300 px-1">
-                <label className="flex items-center gap-3 cursor-pointer group select-none">
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${rememberMe ? 'bg-[#009fe3] border-[#009fe3] scale-110 shadow-lg shadow-[#009fe3]/20' : 'border-slate-200 bg-white group-hover:border-[#009fe3]'}`}>
-                    {rememberMe && <CheckCircle2 size={12} className="text-white animate-in zoom-in duration-300" />}
-                  </div>
-                  <input
-                    type="checkbox"
-                    className="hidden"
-                    checked={rememberMe}
-                    onChange={() => setRememberMe(!rememberMe)}
-                  />
-                  <span className="text-sm font-bold text-slate-500 group-hover:text-[#002060] transition-colors">{t.rememberDevice}</span>
-                </label>
-                
+              <div className="flex items-center justify-end animate-enter delay-300 px-1">
                 <button 
                   type="button" 
                   onClick={() => setShowForgotModal(true)}

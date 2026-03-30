@@ -9,7 +9,7 @@ interface SettingsProps {
   onUpdateUser: (updatedUser: User) => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ user }) => {
+const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
   const t = TRANSLATIONS[user.language];
   
   const [newPassword, setNewPassword] = useState('');
@@ -54,6 +54,8 @@ const Settings: React.FC<SettingsProps> = ({ user }) => {
         }
 
         setSuccess(true);
+        // Sync updated user object back to parent so App state stays fresh
+        onUpdateUser(user);
         setNewPassword('');
         setConfirmPassword('');
         // Show success for 5 seconds
