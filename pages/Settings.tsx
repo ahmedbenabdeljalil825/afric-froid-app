@@ -127,22 +127,14 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
                 <button 
                   onClick={toggleAlarmSound}
                   aria-label="Toggle Alarm Sound"
-                  style={{ width: '80px', height: '40px' }}
-                  className={`relative rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 ${
+                  className={`relative w-20 h-10 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 ${
                     user.config?.alarmSoundEnabled ? 'bg-sky-500' : 'bg-slate-200'
                   }`}
                 >
                   <div 
-                    style={{ 
-                      width: '32px', 
-                      height: '32px', 
-                      position: 'absolute',
-                      left: '4px',
-                      top: '4px',
-                      transform: user.config?.alarmSoundEnabled ? 'translateX(40px)' : 'translateX(0px)',
-                      transition: 'transform 0.3s ease-in-out'
-                    }}
-                    className="flex items-center justify-center rounded-full bg-white shadow-md z-10"
+                    className={`absolute left-1 top-1 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-md z-10 transition-transform duration-300 ease-in-out ${
+                      user.config?.alarmSoundEnabled ? 'translate-x-10' : 'translate-x-0'
+                    }`}
                   >
                     {user.config?.alarmSoundEnabled ? (
                       <Volume2 className="size-5 text-sky-500" />
