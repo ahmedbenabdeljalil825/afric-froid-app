@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import Layout from './components/Layout';
 import ClientDashboard from './pages/ClientDashboard';
 import ClientControls from './pages/ClientControls';
@@ -139,54 +140,57 @@ const App: React.FC = () => {
   }
 
   return (
-    <HashRouter>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            !currentUser ? (
-              <Login />
-            ) : (
-              <Navigate to={currentUser.role === UserRole.ADMIN ? "/admin" : "/dashboard"} replace />
-            )
-          }
-        />
+    <>
+      <HashRouter>
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              !currentUser ? (
+                <Login />
+              ) : (
+                <Navigate to={currentUser.role === UserRole.ADMIN ? "/admin" : "/dashboard"} replace />
+              )
+            }
+          />
 
-        {/* Protected Routes */}
-        {currentUser ? (
-          <Route element={<Layout user={currentUser} onLogout={handleLogout} />}>
+          {/* Protected Routes */}
+          {currentUser ? (
+            <Route element={<Layout user={currentUser} onLogout={handleLogout} />}>
 
-            {/* Admin Routes */}
-            {currentUser.role === UserRole.ADMIN && (
-              <>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/design/:userId" element={<AdminUserDesigner />} />
-              </>
-            )}
+              {/* Admin Routes */}
+              {currentUser.role === UserRole.ADMIN && (
+                <>
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/design/:userId" element={<AdminUserDesigner />} />
+                </>
+              )}
 
-            {/* Client Routes */}
-            {currentUser.role === UserRole.CLIENT && (
-              <>
-                <Route path="/dashboard" element={<ClientDashboard user={currentUser} />} />
-                <Route path="/controls" element={<ClientControls user={currentUser} />} />
-                <Route path="/alarms" element={<AlarmHistoryPage user={currentUser} />} />
-              </>
-            )}
+              {/* Client Routes */}
+              {currentUser.role === UserRole.CLIENT && (
+                <>
+                  <Route path="/dashboard" element={<ClientDashboard user={currentUser} />} />
+                  <Route path="/controls" element={<ClientControls user={currentUser} />} />
+                  <Route path="/alarms" element={<AlarmHistoryPage user={currentUser} />} />
+                </>
+              )}
 
-            {/* Shared Routes */}
-            <Route path="/settings" element={<Settings user={currentUser} onUpdateUser={handleUpdateUser} />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
+              {/* Shared Routes */}
+              <Route path="/settings" element={<Settings user={currentUser} onUpdateUser={handleUpdateUser} />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to={currentUser.role === UserRole.ADMIN ? "/admin" : "/dashboard"} replace />} />
-          </Route>
-        ) : (
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        )}
-      </Routes>
-    </HashRouter>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to={currentUser.role === UserRole.ADMIN ? "/admin" : "/dashboard"} replace />} />
+            </Route>
+          ) : (
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          )}
+        </Routes>
+      </HashRouter>
+      <SpeedInsights />
+    </>
   );
 };
 
