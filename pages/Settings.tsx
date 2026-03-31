@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { Lock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { TRANSLATIONS } from '../constants';
+import { Lock, CheckCircle2, AlertCircle, Loader2, Bell, Volume2, VolumeX, BellRing } from 'lucide-react';
+import { TRANSLATIONS, DEFAULT_USER_CONFIG } from '../constants';
 import { supabase } from '../services/supabase';
+import { playSiren, initAudio } from '../utils/audio';
 
 interface SettingsProps {
   user: User;
@@ -67,6 +68,35 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
       setLoading(false);
     }
   };
+  
+  const toggleAlarmSound = async () => {
+    const newConfig = {
+      ...DEFAULT_USER_CONFIG,
+      ...(user.config || {}),
+      alarmSoundEnabled: !user.config?.alarmSoundEnabled
+    };
+
+    const updatedUser = {
+      ...user,
+      config: newConfig
+    };
+
+    try {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ config: newConfig })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Error updating alarm settings:', profileError);
+        setError(user.language === 'fr' ? 'Erreur lors de la mise à jour des paramètres.' : 'Error updating settings.');
+      } else {
+        onUpdateUser(updatedUser);
+      }
+    } catch (err) {
+      console.error('Async error updating alarm settings:', err);
+    }
+  };
 
   return (
     <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -76,6 +106,69 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
         </div>
 
       <div className="space-y-8">
+        {/* Preferences Section */}
+        <div className="bg-white rounded-[32px] p-8 lg:p-10 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50/50 rounded-full blur-3xl -mr-16 -mt-16 transition-transform duration-1000 group-hover:scale-150"></div>
+           
+           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
+            <div className="p-5 bg-sky-50 rounded-[24px] shadow-inner text-sky-500 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
+              <Bell size={32} />
+            </div>
+            
+            <div className="flex-1 min-w-0 w-full">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-2xl font-black text-[#002060] tracking-tight truncate">{t.alarmSound}</h3>
+                  <p className="text-slate-500 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                    {user.config?.alarmSoundEnabled ? t.enableAlarmSound : t.disableAlarmSound}
+                  </p>
+                </div>
+                
+                <button 
+                  onClick={toggleAlarmSound}
+                  aria-label="Toggle Alarm Sound"
+                  style={{ width: '80px', height: '40px' }}
+                  className={`relative rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 ${
+                    user.config?.alarmSoundEnabled ? 'bg-sky-500' : 'bg-slate-200'
+                  }`}
+                >
+                  <div 
+                    style={{ 
+                      width: '32px', 
+                      height: '32px', 
+                      position: 'absolute',
+                      left: '4px',
+                      top: '4px',
+                      transform: user.config?.alarmSoundEnabled ? 'translateX(40px)' : 'translateX(0px)',
+                      transition: 'transform 0.3s ease-in-out'
+                    }}
+                    className="flex items-center justify-center rounded-full bg-white shadow-md z-10"
+                  >
+                    {user.config?.alarmSoundEnabled ? (
+                      <Volume2 className="size-5 text-sky-500" />
+                    ) : (
+                      <VolumeX className="size-5 text-slate-400" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Test Sound Button */}
+                <button
+                  onClick={() => {
+                    initAudio(); // Prompt resume on interaction
+                    playSiren();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 active:scale-95 transition-all border border-slate-200"
+                  title={t.testSound}
+                >
+                  <BellRing className="size-5 text-[#002060]" />
+                  <span>{t.testSound}</span>
+                </button>
+              </div>
+            </div>
+           </div>
+        </div>
+
         {/* Security Section */}
         <div className="bg-white rounded-[32px] p-8 lg:p-10 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full blur-3xl -mr-16 -mt-16 transition-transform duration-1000 group-hover:scale-150"></div>
@@ -99,9 +192,18 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder={t.newPassword}
-                        className="w-full pl-5 pr-5 py-4 rounded-2xl border border-slate-200 bg-slate-50/50 focus:border-[#009fe3] focus:bg-white focus:ring-[6px] focus:ring-[#009fe3]/5 outline-none transition-all duration-300 font-semibold text-slate-900 placeholder:text-slate-300"
+                        className={`w-full pl-5 pr-5 py-4 rounded-2xl border bg-slate-50/50 focus:bg-white focus:ring-[6px] outline-none transition-all duration-300 font-semibold text-slate-900 placeholder:text-slate-300 ${
+                          newPassword && newPassword.length < 6 
+                            ? 'border-amber-300 focus:border-amber-400 focus:ring-amber-400/5' 
+                            : 'border-slate-200 focus:border-[#009fe3] focus:ring-[#009fe3]/5'
+                        }`}
                         disabled={loading}
                       />
+                      {newPassword && newPassword.length < 6 && (
+                        <p className="mt-1 text-[10px] font-bold text-amber-600 uppercase tracking-wider ml-1">
+                          {user.language === 'fr' ? '6 caractères minimum' : '6 characters minimum'}
+                        </p>
+                      )}
                     </div>
                     
                     <div className="relative group/input">
@@ -110,9 +212,20 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder={t.confirmPassword}
-                        className="w-full pl-5 pr-5 py-4 rounded-2xl border border-slate-200 bg-slate-50/50 focus:border-[#009fe3] focus:bg-white focus:ring-[6px] focus:ring-[#009fe3]/5 outline-none transition-all duration-300 font-semibold text-slate-900 placeholder:text-slate-300"
+                        className={`w-full pl-5 pr-5 py-4 rounded-2xl border bg-slate-50/50 focus:bg-white focus:ring-[6px] outline-none transition-all duration-300 font-semibold text-slate-900 placeholder:text-slate-300 ${
+                          confirmPassword && newPassword !== confirmPassword 
+                            ? 'border-red-300 focus:border-red-400 focus:ring-red-400/5' 
+                            : confirmPassword && newPassword === confirmPassword
+                              ? 'border-emerald-300 focus:border-emerald-400 focus:ring-emerald-400/5'
+                              : 'border-slate-200 focus:border-[#009fe3] focus:ring-[#009fe3]/5'
+                        }`}
                         disabled={loading}
                       />
+                      {confirmPassword && newPassword !== confirmPassword && (
+                        <p className="mt-1 text-[10px] font-bold text-red-600 uppercase tracking-wider ml-1">
+                          {user.language === 'fr' ? 'Les mots de passe ne correspondent pas' : 'Passwords do not match'}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -133,8 +246,8 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
                   <div className="flex justify-end pt-2">
                      <button 
                         type="submit"
-                        disabled={loading || !newPassword}
-                        className="flex items-center justify-center gap-2 px-8 py-4 bg-[#002060] text-white rounded-2xl font-black hover:bg-[#004080] hover:-translate-y-1 active:scale-95 transition-all duration-300 shadow-xl shadow-[#002060]/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                        disabled={loading || !newPassword || !confirmPassword || newPassword !== confirmPassword || newPassword.length < 6}
+                        className="flex items-center justify-center gap-2 px-8 py-4 bg-[#002060] text-white rounded-2xl font-black hover:bg-[#004080] hover:-translate-y-1 active:scale-95 transition-all duration-300 shadow-xl shadow-[#002060]/20 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed disabled:transform-none"
                      >
                        {loading ? <Loader2 className="animate-spin" size={20} /> : null}
                        {t.updatePassword}

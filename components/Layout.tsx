@@ -11,6 +11,7 @@ import {
   Info,
   Bell
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { User, UserRole } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { BrokerStatus } from './BrokerStatus';
@@ -55,13 +56,22 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           navigate(path);
           setSidebarOpen(false);
         }}
-        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive
-          ? 'bg-frost-500 text-white shadow-lg shadow-frost-500/30'
-          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 relative group overflow-hidden ${isActive
+          ? 'text-white'
+          : 'text-slate-400 hover:text-white'
           }`}
       >
-        <Icon size={20} />
-        <span className="font-medium">{label}</span>
+        {isActive && (
+          <motion.div
+            layoutId="active-nav-bg"
+            className="absolute inset-0 bg-frost-500 shadow-lg shadow-frost-500/30 z-0"
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+          />
+        )}
+        <span className="relative z-10 flex items-center gap-3">
+          <Icon size={20} className={isActive ? 'text-white' : 'group-hover:text-white transition-colors'} />
+          <span className="font-medium">{label}</span>
+        </span>
       </button>
     );
   };

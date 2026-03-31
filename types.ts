@@ -127,6 +127,7 @@ export interface UserConfig {
   showPowerChart: boolean;
   allowSetpointControl: boolean;
   allowPowerControl: boolean;
+  alarmSoundEnabled: boolean;
 }
 
 export interface MqttConfig {
@@ -250,4 +251,10 @@ export interface Translation {
   architectureLead: string;
   inPartnershipWith: string;
   poweredBy: string;
+  
+  // Alarms Sound
+  alarmSound: string;
+  enableAlarmSound: string;
+  disableAlarmSound: string;
+  testSound: string;
 }

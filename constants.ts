@@ -6,6 +6,7 @@ export const DEFAULT_USER_CONFIG: UserConfig = {
   showPowerChart: false,
   allowSetpointControl: true,
   allowPowerControl: false,
+  alarmSoundEnabled: true,
 };
 
 export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
@@ -85,7 +86,11 @@ export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
     devCredits: 'Development Credits',
     architectureLead: 'Architecture & Lead Development',
     inPartnershipWith: 'In Partnership With',
-    poweredBy: 'Powered By'
+    poweredBy: 'Powered By',
+    alarmSound: 'Alarm Sound',
+    enableAlarmSound: 'Audio alert enabled',
+    disableAlarmSound: 'Audio alert disabled',
+    testSound: 'Test Sound'
   },
   fr: {
     // Navigation & Sessions
@@ -163,6 +168,10 @@ export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
     devCredits: 'Crédits de Développement',
     architectureLead: 'Architecture et Développement Principal',
     inPartnershipWith: 'En Partenariat Avec',
-    poweredBy: 'Propulsé Par'
+    poweredBy: 'Propulsé Par',
+    alarmSound: 'Alarmes Sonores',
+    enableAlarmSound: 'Alerte sonore activée',
+    disableAlarmSound: 'Alerte sonore désactivée',
+    testSound: 'Tester le son'
   }
 };

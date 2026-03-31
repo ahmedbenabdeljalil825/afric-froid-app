@@ -76,4 +76,21 @@
 .animate-enter {
     opacity: 0;
     animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
+}
+
+.ease-spring {
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+}
+
+/* Accessibility utility */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
