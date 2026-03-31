@@ -127,14 +127,19 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
                 <button 
                   onClick={toggleAlarmSound}
                   aria-label="Toggle Alarm Sound"
-                  className={`relative w-20 h-10 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 ${
+                  style={{ width: '80px', height: '40px' }}
+                  className={`relative shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 ${
                     user.config?.alarmSoundEnabled ? 'bg-sky-500' : 'bg-slate-200'
                   }`}
                 >
                   <div 
-                    className={`absolute left-1 top-1 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-md z-10 transition-transform duration-300 ease-in-out ${
-                      user.config?.alarmSoundEnabled ? 'translate-x-10' : 'translate-x-0'
-                    }`}
+                    style={{ 
+                      width: '32px', 
+                      height: '32px', 
+                      left: '4px',
+                      transform: user.config?.alarmSoundEnabled ? 'translateX(40px)' : 'translateX(0)'
+                    }}
+                    className="absolute top-1 flex items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out z-10"
                   >
                     {user.config?.alarmSoundEnabled ? (
                       <Volume2 className="size-5 text-sky-500" />
@@ -150,7 +155,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
                     initAudio(); // Prompt resume on interaction
                     playSiren();
                   }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 active:scale-95 transition-all border border-slate-200"
+                  className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 active:scale-95 transition-all border border-slate-200"
                   title={t.testSound}
                 >
                   <BellRing className="size-5 text-[#002060]" />
