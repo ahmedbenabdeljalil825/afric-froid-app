@@ -130,20 +130,24 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
   if (loading) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center text-slate-400 space-y-4">
-        <div className="w-12 h-12 border-4 border-[#009fe3]/30 border-t-[#009fe3] rounded-full animate-spin"></div>
-        <p className="font-medium animate-pulse">Loading Dashboard Architecture...</p>
+        <div className="w-12 h-12 border-4 border-[#009fe3]/30 border-t-[#009fe3] rounded-full animate-spin shadow-[0_0_15px_rgba(0,159,227,0.2)]"></div>
+        <p className="font-medium animate-pulse tracking-wide text-slate-500">{t.dashboardLoading}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/40 pb-6">
         <div>
-          <h2 className="text-3xl font-black text-[#002060] tracking-tight mb-2">{t.dashboard}</h2>
-          <p className="text-slate-500 font-medium">Monitoring Unit: <span className="text-[#009fe3] font-bold">{user.name}</span></p>
+          <h2 className="text-4xl font-black text-[#002060] tracking-tight mb-2 drop-shadow-sm">{t.dashboard}</h2>
+          <p className="text-slate-500 font-medium flex items-center gap-2">
+            <span className="opacity-70">{t.monitoringUnit}:</span>
+            <span className="text-[#009fe3] font-bold px-3 py-0.5 bg-[#009fe3]/5 rounded-lg border border-[#009fe3]/10">{user.name}</span>
+          </p>
         </div>
-        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-slate-100 shadow-sm">
+        
+        <div className="flex items-center gap-3 bg-white/60 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/40 shadow-xl shadow-slate-200/40 transition-all hover:shadow-2xl hover:bg-white/80">
           <div className="relative flex h-3 w-3">
             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
               mqttStatus === 'connected' ? 'bg-emerald-400' :
@@ -156,18 +160,24 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
               mqttStatus === 'error' ? 'bg-red-500' : 'bg-slate-400'
             }`}></span>
           </div>
-          <span className="text-sm font-bold text-slate-700">
-            {mqttStatus === 'connected' ? 'PLC ONLINE' :
-             mqttStatus === 'connecting' ? 'CONNECTING...' :
-             mqttStatus === 'error' ? 'CONN. ERROR' : 'OFFLINE'}
+          <span className="text-sm font-black text-slate-700 tracking-wide">
+            {mqttStatus === 'connected' ? t.brokerOnline.toUpperCase() :
+             mqttStatus === 'connecting' ? t.brokerConnecting.toUpperCase() :
+             mqttStatus === 'error' ? t.brokerError.toUpperCase() : t.brokerOffline.toUpperCase()}
           </span>
-          <span className="text-xs text-slate-400 font-mono border-l pl-3 ml-1">Live Feed</span>
+          <div className="h-4 w-px bg-slate-200 mx-1" />
+          <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{t.plcliveFeed}</span>
         </div>
       </div>
 
       {widgets.length === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center border-2 border-dashed border-slate-100">
-          <p className="text-slate-400 font-medium">No widgets configured for this dashboard yet.</p>
+        <div className="bg-white/40 backdrop-blur-md rounded-[2.5rem] p-16 text-center border border-white/60 shadow-inner">
+          <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 opacity-50">
+            <svg className="w-10 h-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <p className="text-slate-400 font-bold text-lg">{t.noWidgets}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
@@ -191,6 +201,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
               >
                 <WidgetRenderer
                   widget={widget}
+                  language={user.language}
                   colorIndex={index}
                   currentData={val}
                   historyData={historyData[widget.variableName]}

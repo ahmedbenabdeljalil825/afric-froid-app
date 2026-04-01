@@ -154,9 +154,9 @@ export const AlarmBell: React.FC<AlarmBellProps> = ({ user }) => {
                     setIsOpen(!isOpen);
                     if (!isOpen) stopAlarm();
                 }}
-                className={`relative p-2.5 rounded-2xl transition-all duration-500 shadow-lg ${activeAlarms.length > 0
-                    ? 'bg-red-500 text-white animate-pulse shadow-red-200 ring-4 ring-red-50'
-                    : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100 hover:text-[#009fe3]'
+                className={`relative p-2.5 rounded-2xl transition-all duration-500 shadow-lg border ${activeAlarms.length > 0
+                    ? 'bg-red-500 text-white animate-pulse shadow-red-200 ring-4 ring-red-50 border-red-400'
+                    : 'bg-white/80 backdrop-blur-md text-slate-400 hover:bg-white border-slate-100 hover:text-[#009fe3] hover:shadow-xl hover:-translate-y-0.5'
                     }`}
                 title={activeAlarms.length > 0 ? `${activeAlarms.length} ${t.alarms}` : t.noActiveAlarms}
             >
@@ -179,12 +179,12 @@ export const AlarmBell: React.FC<AlarmBellProps> = ({ user }) => {
                         className="fixed inset-0 z-40 bg-transparent"
                         onClick={() => setIsOpen(false)}
                     />
-                    <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="font-black text-slate-800 text-xs uppercase tracking-widest">{t.alarms}</h3>
+                    <div className="absolute right-0 mt-3 w-85 bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 z-50 overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-300">
+                        <div className="p-5 bg-slate-50/50 border-b border-slate-100/50 flex items-center justify-between">
+                            <h3 className="font-black text-slate-900 text-[10px] uppercase tracking-[0.2em]">{t.alarms}</h3>
                             <button
                                 onClick={() => setIsOpen(false)}
-                                className="text-slate-400 hover:text-slate-600"
+                                className="p-1.5 rounded-full hover:bg-slate-200/50 text-slate-400 hover:text-slate-600 transition-colors"
                                 title={t.cancel}
                             >
                                 <X size={16} />
@@ -198,23 +198,41 @@ export const AlarmBell: React.FC<AlarmBellProps> = ({ user }) => {
                                     <p className="text-sm font-medium">{t.noActiveAlarms}</p>
                                 </div>
                             ) : (
-                                <div className="divide-y divide-slate-100">
-                                    {activeAlarms.map(alarm => (
-                                        <div key={alarm.id} className="p-4 hover:bg-slate-50 transition-colors">
+                                <div className="divide-y divide-slate-100/50">
+                                    {activeAlarms.map((alarm, index) => (
+                                        <div 
+                                            key={alarm.id} 
+                                            className="p-4 hover:bg-slate-50/80 transition-all cursor-default group animate-in fade-in slide-in-from-right-4 duration-500"
+                                            style={{ animationDelay: `${index * 75}ms` }}
+                                        >
                                             <div className="flex gap-3">
-                                                <div className="mt-1">
-                                                    <AlertCircle size={16} className="text-red-500" />
+                                                <div className={`mt-1 p-1.5 rounded-lg ${
+                                                    alarm.severity === 'CRITICAL' ? 'bg-red-50 text-red-500' :
+                                                    alarm.severity === 'HIGH' ? 'bg-orange-50 text-orange-500' :
+                                                    'bg-blue-50 text-blue-500'
+                                                }`}>
+                                                    <AlertCircle size={14} className={alarm.severity === 'CRITICAL' ? 'animate-pulse' : ''} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-bold text-slate-900 truncate">
-                                                        {alarm.variableName} {alarm.alarmType}
+                                                    <div className="flex justify-between items-start">
+                                                        <p className="text-sm font-bold text-slate-900 truncate group-hover:text-red-600 transition-colors">
+                                                            {alarm.variableName}
+                                                        </p>
+                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${
+                                                            alarm.severity === 'CRITICAL' ? 'bg-red-100 text-red-600' :
+                                                            alarm.severity === 'HIGH' ? 'bg-orange-100 text-orange-600' :
+                                                            'bg-blue-100 text-blue-600'
+                                                        }`}>
+                                                            {alarm.severity}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 mt-1">
+                                                        {t.value}: <span className="font-bold text-red-600">{alarm.triggerValue}</span>
+                                                        <span className="mx-2 opacity-30">|</span>
+                                                        {t.limit}: <span className="font-medium">{alarm.thresholdValue}</span>
                                                     </p>
-                                                    <p className="text-xs text-slate-500 mt-0.5">
-                                                        Value: <span className="font-bold text-red-600">{alarm.triggerValue}</span>
-                                                        (Limit: {alarm.thresholdValue})
-                                                    </p>
-                                                    <p className="text-[10px] text-slate-400 mt-1 uppercase font-black">
-                                                        {new Date(alarm.createdAt).toLocaleTimeString()}
+                                                    <p className="text-[10px] text-slate-400 mt-2 uppercase font-black tracking-widest">
+                                                        {new Date(alarm.createdAt).toLocaleTimeString(user.language === 'fr' ? 'fr-FR' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
                                                     </p>
                                                 </div>
                                             </div>
@@ -224,18 +242,18 @@ export const AlarmBell: React.FC<AlarmBellProps> = ({ user }) => {
                             )}
                         </div>
 
-                        <div className="p-3 bg-slate-50 border-t border-slate-100 flex gap-2">
+                        <div className="p-4 bg-slate-50/80 border-t border-slate-100/50 flex gap-2.5">
                             <Link
                                 to="/alarms"
                                 onClick={() => setIsOpen(false)}
-                                className="flex-1 text-center bg-white text-slate-600 px-3 py-2 rounded-lg text-xs font-bold border border-slate-200 hover:bg-slate-100 transition-colors"
+                                className="flex-1 text-center bg-white text-slate-600 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-50 hover:border-[#009fe3] hover:text-[#009fe3] transition-all shadow-sm"
                             >
                                 {t.viewHistory}
                             </Link>
                             {activeAlarms.length > 0 && (
                                 <button
                                     onClick={acknowledgeAll}
-                                    className="flex-1 bg-frost-500 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-frost-600 transition-colors"
+                                    className="flex-1 bg-red-600 text-white px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg shadow-red-100"
                                 >
                                     {t.clearAll}
                                 </button>

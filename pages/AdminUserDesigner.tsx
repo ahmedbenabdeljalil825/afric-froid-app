@@ -397,7 +397,7 @@ const AdminUserDesigner: React.FC = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {widgets.filter(w => w.isActive && w.category === WidgetCategory.READING).map((w, i) => (
                                                 <div key={w.id} className="min-h-[240px]">
-                                                    <WidgetRenderer widget={w} colorIndex={i} isPreview={true} />
+                                                    <WidgetRenderer widget={w} language={user.language ?? 'fr'} colorIndex={i} isPreview={true} />
                                                 </div>
                                             ))}
                                         </div>
@@ -415,7 +415,7 @@ const AdminUserDesigner: React.FC = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {widgets.filter(w => w.isActive && w.category === WidgetCategory.CONTROLLING).map((w, i) => (
                                                 <div key={w.id} className="min-h-[240px]">
-                                                    <WidgetRenderer widget={w} colorIndex={i + 2} isPreview={true} />
+                                                    <WidgetRenderer widget={w} language={user.language ?? 'fr'} colorIndex={i + 2} isPreview={true} />
                                                 </div>
                                             ))}
                                         </div>

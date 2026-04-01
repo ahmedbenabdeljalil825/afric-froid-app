@@ -94,3 +94,47 @@
     white-space: nowrap;
     border-width: 0;
 }
+
+/* Dynamic color utilities to avoid inline styles */
+.dynamic-bg {
+    background-color: var(--bg-color, transparent);
+}
+
+.dynamic-border {
+    border-color: var(--border-color, transparent);
+}
+
+/* tailwindcss-animate drop-in replacements for v4 */
+@keyframes animate-in {
+    from {
+        opacity: var(--tw-enter-opacity, 1);
+        transform: translate(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0)) scale(var(--tw-enter-scale, 1));
+    }
+}
+
+.animate-in {
+    animation-name: animate-in;
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-fill-mode: forwards;
+}
+
+.fade-in {
+    --tw-enter-opacity: 0;
+}
+
+.zoom-in {
+    --tw-enter-scale: 0;
+}
+
+.zoom-in-95 {
+    --tw-enter-scale: 0.95;
+}
+
+.slide-in-from-bottom-4 {
+    --tw-enter-translate-y: 1rem;
+}
+
+.slide-in-from-bottom-8 {
+    --tw-enter-translate-y: 2rem;
+}

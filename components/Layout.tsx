@@ -152,7 +152,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           </div>
           <div className="flex items-center gap-2">
             <AlarmBell user={user} />
-            <BrokerStatus />
+            <BrokerStatus user={user} />
             <button
               onClick={() => setSidebarOpen(!isSidebarOpen)}
               className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
@@ -166,7 +166,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           <div className="max-w-7xl mx-auto space-y-8">
             <div className="hidden lg:flex justify-end items-center gap-3 mb-4">
               <AlarmBell user={user} />
-              <BrokerStatus />
+              <BrokerStatus user={user} />
             </div>
             <Outlet />
           </div>

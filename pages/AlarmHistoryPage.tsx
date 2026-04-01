@@ -1,201 +1,250 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { Alarm, User } from '../types';
-import { AlertCircle, CheckCircle2, Clock, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Trash2, RefreshCcw } from 'lucide-react';
+import { TRANSLATIONS } from '../constants';
 
 interface AlarmHistoryPageProps {
-    user: User;
+  user: User;
 }
 
 const AlarmHistoryPage: React.FC<AlarmHistoryPageProps> = ({ user }) => {
-    const [alarms, setAlarms] = useState<Alarm[]>([]);
-    const [loading, setLoading] = useState(true);
+  const [alarms, setAlarms] = useState<Alarm[]>([]);
+  const [loading, setLoading] = useState(true);
+  const t = TRANSLATIONS[user.language];
 
-    useEffect(() => {
-        fetchAlarms(user.id);
-    }, [user.id]);
+  useEffect(() => {
+    fetchAlarms(user.id);
+  }, [user.id]);
 
-    const fetchAlarms = async (userId: string) => {
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('alarms')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
+  const fetchAlarms = async (userId: string) => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('alarms')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-        if (!error && data) {
-            setAlarms(data.map((a: any) => ({
-                id: a.id,
-                userId: a.user_id,
-                widgetId: a.widget_id,
-                variableName: a.variable_name,
-                triggerValue: a.trigger_value,
-                thresholdValue: a.threshold_value,
-                alarmType: a.alarm_type,
-                severity: a.severity,
-                status: a.status,
-                createdAt: a.created_at,
-                resolvedAt: a.resolved_at,
-                acknowledgedAt: a.acknowledged_at
-            })));
-        }
-        setLoading(false);
+    if (!error && data) {
+      setAlarms(data.map((a: any) => ({
+        id: a.id,
+        userId: a.user_id,
+        widgetId: a.widget_id,
+        variableName: a.variable_name,
+        triggerValue: a.trigger_value,
+        thresholdValue: a.threshold_value,
+        alarmType: a.alarm_type,
+        severity: a.severity,
+        status: a.status,
+        createdAt: a.created_at,
+        resolvedAt: a.resolved_at,
+        acknowledgedAt: a.acknowledged_at
+      })));
+    }
+    setLoading(false);
+  };
+
+  const deleteHistory = async () => {
+    if (!confirm(t.confirmClearHistory)) return;
+
+    const { error } = await supabase
+      .from('alarms')
+      .delete()
+      .eq('user_id', user.id)
+      .neq('status', 'ACTIVE'); // Keep active alarms
+
+    if (!error) {
+      fetchAlarms(user.id);
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return <AlertCircle className="text-red-500 animate-pulse" />;
+      case 'ACKNOWLEDGED': return <Clock className="text-amber-500" />;
+      case 'RESOLVED': return <CheckCircle2 className="text-emerald-500" />;
+      default: return null;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return t.activeStatus;
+      case 'ACKNOWLEDGED': return t.acknowledgedStatus;
+      case 'RESOLVED': return t.resolvedStatus;
+      default: return status;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      ACTIVE: 'bg-red-500/10 text-red-600 border-red-500/20',
+      ACKNOWLEDGED: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+      RESOLVED: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+    }[status] || 'bg-slate-500/10 text-slate-600 border-slate-500/20';
+
+    return (
+      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${styles}`}>
+        {getStatusLabel(status)}
+      </span>
+    );
+  };
+
+  const getSeverityBadge = (severity: string) => {
+    const labels: Record<string, string> = {
+      LOW: t.lowSeverity,
+      MEDIUM: t.mediumSeverity,
+      HIGH: t.highSeverity,
+      CRITICAL: t.criticalSeverity,
     };
 
-    const deleteHistory = async () => {
-        if (!confirm('Are you sure you want to clear your alarm history?')) return;
-
-        const { error } = await supabase
-            .from('alarms')
-            .delete()
-            .eq('user_id', user.id)
-            .neq('status', 'ACTIVE'); // Keep active alarms
-
-        if (!error) {
-            fetchAlarms(user.id);
-        }
-    };
-
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'ACTIVE': return <AlertCircle className="text-red-500" />;
-            case 'ACKNOWLEDGED': return <Clock className="text-amber-500" />;
-            case 'RESOLVED': return <CheckCircle2 className="text-emerald-500" />;
-            default: return null;
-        }
-    };
-
-    const getStatusBadge = (status: string) => {
-        const styles = {
-            ACTIVE: 'bg-red-100 text-red-700',
-            ACKNOWLEDGED: 'bg-amber-100 text-amber-700',
-            RESOLVED: 'bg-emerald-100 text-emerald-700'
-        }[status] || 'bg-slate-100 text-slate-700';
-
-        return (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${styles}`}>
-                {status}
-            </span>
-        );
-    };
-
-    const getSeverityBadge = (severity: string) => {
-        const styles: Record<string, string> = {
-            LOW: 'text-slate-500',
-            MEDIUM: 'text-amber-600',
-            HIGH: 'text-orange-600',
-            CRITICAL: 'text-red-600',
-        };
-        return (
-            <p className={`text-[10px] font-black tracking-wider ${styles[severity] || 'text-red-500'}`}>
-                {severity}
-            </p>
-        );
+    const styles: Record<string, string> = {
+      LOW: 'text-slate-500',
+      MEDIUM: 'text-amber-600',
+      HIGH: 'text-orange-600',
+      CRITICAL: 'text-red-700 font-extrabold',
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/60 pb-6">
-                <div>
-                    <h2 className="text-3xl font-black text-[#002060] tracking-tight mb-2">Alarm History</h2>
-                    <p className="text-slate-500 font-medium italic">Audit log of system anomalies and alerts</p>
-                </div>
-                <div className="flex gap-3">
-                    <button
-                        onClick={() => fetchAlarms(user.id)}
-                        className="p-2 bg-white text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
-                        title="Refresh"
-                    >
-                        <Clock size={20} />
-                    </button>
-                    <button
-                        onClick={deleteHistory}
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-red-600 border border-red-100 rounded-xl hover:bg-red-50 transition-colors font-bold text-sm"
-                    >
-                        <Trash2 size={16} />
-                        Clear History
-                    </button>
-                </div>
-            </div>
-
-            {loading ? (
-                <div className="flex justify-center py-20">
-                    <div className="w-10 h-10 border-4 border-[#009fe3]/20 border-t-[#009fe3] rounded-full animate-spin"></div>
-                </div>
-            ) : alarms.length === 0 ? (
-                <div className="bg-white rounded-3xl p-20 text-center border-2 border-dashed border-slate-100">
-                    <CheckCircle2 size={48} className="mx-auto mb-4 text-emerald-500 opacity-20" />
-                    <p className="text-slate-400 font-medium text-lg">Your system is running smoothly.</p>
-                    <p className="text-slate-300 text-sm mt-1">No alarm history found.</p>
-                </div>
-            ) : (
-                <div className="bg-white rounded-[32px] shadow-xl border border-white overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-100">
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Alarm</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Value</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Threshold</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Created</th>
-                                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Details</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {alarms.map((alarm) => (
-                                    <tr key={alarm.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                {getStatusIcon(alarm.status)}
-                                                {getStatusBadge(alarm.status)}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div>
-                                                <p className="font-bold text-slate-900 text-sm">{alarm.variableName}</p>
-                                                {getSeverityBadge(alarm.severity)}
-                                                <p className="text-[10px] text-slate-400 font-semibold">{alarm.alarmType}</p>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-sm font-mono font-bold text-red-600 bg-red-50 px-2 py-1 rounded">
-                                                {alarm.triggerValue}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-sm font-mono text-slate-500">
-                                                {alarm.thresholdValue}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="space-y-0.5">
-                                                <p className="text-xs font-bold text-slate-700">
-                                                    {new Date(alarm.createdAt).toLocaleDateString()}
-                                                </p>
-                                                <p className="text-[10px] text-slate-400">
-                                                    {new Date(alarm.createdAt).toLocaleTimeString()}
-                                                </p>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <p className="text-xs text-slate-500 italic max-w-xs truncate">
-                                                {alarm.status === 'RESOLVED'
-                                                    ? `Auto-resolved at ${new Date(alarm.resolvedAt!).toLocaleTimeString()}`
-                                                    : alarm.status === 'ACKNOWLEDGED'
-                                                        ? `Acknowledged at ${new Date(alarm.acknowledgedAt!).toLocaleTimeString()}`
-                                                        : 'Currently active and monitoring'}
-                                            </p>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-        </div>
+      <p className={`text-[10px] font-black tracking-wider uppercase ${styles[severity] || 'text-red-500'}`}>
+        {labels[severity] || severity}
+      </p>
     );
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6">
+        <div>
+          <h2 className="text-4xl font-black text-[#002060] tracking-tighter mb-2">
+            {t.alarmHistory}
+          </h2>
+          <p className="text-slate-500 font-medium italic opacity-80">
+            {t.alarmAuditLog}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => fetchAlarms(user.id)}
+            className="p-3 bg-white/70 backdrop-blur-md text-slate-600 border border-slate-200 rounded-2xl hover:bg-white hover:shadow-lg hover:text-[#009fe3] transition-all active:scale-95 group"
+            title={t.refresh}
+          >
+            <RefreshCcw size={20} className="group-hover:rotate-180 transition-transform duration-500" />
+          </button>
+          <button
+            onClick={deleteHistory}
+            className="flex items-center gap-2 px-6 py-3 bg-white/70 backdrop-blur-md text-red-600 border border-red-100 rounded-2xl hover:bg-red-50 hover:shadow-lg transition-all active:scale-95 font-black text-sm uppercase tracking-wider"
+          >
+            <Trash2 size={16} />
+            {t.clearHistory}
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-32 space-y-4">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-[#009fe3]/10 border-t-[#009fe3] rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center font-bold text-[#009fe3] text-[10px]">AF</div>
+          </div>
+        </div>
+      ) : alarms.length === 0 ? (
+        <div className="bg-white/50 backdrop-blur-xl rounded-[40px] p-24 text-center border-2 border-dashed border-slate-100 shadow-sm animate-in zoom-in-95 duration-500">
+          <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle2 size={40} className="text-emerald-500/40" />
+          </div>
+          <p className="text-slate-900 font-black text-2xl tracking-tight">{t.systemRunningSmoothly}</p>
+          <p className="text-slate-400 font-medium mt-2">{t.noAlarmHistory}</p>
+        </div>
+      ) : (
+        <div className="bg-white/80 backdrop-blur-2xl rounded-[40px] shadow-2xl shadow-slate-200/50 border border-white overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.status}</th>
+                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.alarm}</th>
+                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.value}</th>
+                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.threshold}</th>
+                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.created}</th>
+                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.details}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {alarms.map((alarm, idx) => (
+                  <tr 
+                    key={alarm.id} 
+                    className="hover:bg-[#009fe3]/[0.02] transition-colors group cursor-default"
+                    style={{ animationDelay: `${idx * 50}ms` }}
+                  >
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-3">
+                        {getStatusIcon(alarm.status)}
+                        {getStatusBadge(alarm.status)}
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div>
+                        <p className="font-black text-[#002060] text-base mb-0.5 group-hover:text-[#009fe3] transition-colors">
+                          {alarm.variableName}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          {getSeverityBadge(alarm.severity)}
+                          <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter italic">
+                            {alarm.alarmType}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="inline-flex items-center px-3 py-1 bg-red-50 text-red-600 rounded-xl border border-red-100 shadow-sm shadow-red-500/5">
+                        <span className="text-sm font-mono font-black">
+                          {alarm.triggerValue}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className="text-sm font-mono font-bold text-slate-500">
+                        {alarm.thresholdValue}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="space-y-1">
+                        <p className="text-[13px] font-black text-slate-700">
+                          {new Date(alarm.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </p>
+                        <div className="flex items-center gap-1.5 opacity-60">
+                          <Clock size={10} className="text-slate-400" />
+                          <p className="text-[10px] text-slate-500 font-bold">
+                            {new Date(alarm.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <p className="text-xs text-slate-500 font-medium italic leading-relaxed max-w-[200px]">
+                        {alarm.status === 'RESOLVED'
+                          ? `${t.autoResolvedAt} ${new Date(alarm.resolvedAt!).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
+                          : alarm.status === 'ACKNOWLEDGED'
+                            ? `${t.acknowledgedAtLabel} ${new Date(alarm.acknowledgedAt!).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`
+                            : t.monitoringActive}
+                      </p>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-slate-50/50 px-8 py-4 border-t border-slate-100 flex justify-between items-center">
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+               {alarms.length} {t.alarms}
+             </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default AlarmHistoryPage;

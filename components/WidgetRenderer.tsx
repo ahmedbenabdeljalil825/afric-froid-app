@@ -3,9 +3,10 @@ import {
     AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-    Activity, Zap, ToggleLeft, ToggleRight, Send, Type, Hash, SlidersHorizontal, AlertTriangle
+    Activity, Zap, ToggleLeft, ToggleRight, Send, Type, Hash, SlidersHorizontal, AlertTriangle, Info
 } from 'lucide-react';
-import { Widget, ReadingWidgetType, ControllingWidgetType, GaugeConfig, ButtonConfig, MultiStateConfig } from '../types';
+import { TRANSLATIONS } from '../constants';
+import { Widget, ReadingWidgetType, ControllingWidgetType, GaugeConfig, ButtonConfig, MultiStateConfig, Language } from '../types';
 import InfoTooltip from './InfoTooltip';
 import { mqttService } from '../services/mqttService';
 
@@ -44,28 +45,32 @@ function generateDemoBarData(points: number = 6) {
 // ══════════════════════════════════════════════════════════
 
 // ── Line Chart Widget ──
-const LineChartWidget: React.FC<{ widget: Widget; colorIndex: number; liveData?: any[] }> = ({ widget, colorIndex, liveData }) => {
+const LineChartWidget: React.FC<{ widget: Widget; colorIndex: number; liveData?: any[]; language: Language }> = ({ widget, colorIndex, liveData, language }) => {
     const data = liveData || [];
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full">
-            <div className="flex items-center justify-between mb-4">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
-                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{widget.dataLabel || widget.variableName}</p>
+                    <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex items-center gap-2">
+                        <Activity size={16} className={color.text} />
+                        {widget.name}
+                    </h4>
+                    <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-tighter uppercase">{t.live} {t.plcliveFeed}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${color.bg} ${color.text}`}>
-                        Live
+                    <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${color.bg} ${color.text} shadow-sm border ${color.border}/50`}>
+                        {t.live.toUpperCase()}
                     </div>
                     <InfoTooltip
-                        title="Configuration"
+                        title={t.configuration}
                         content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                     />
                 </div>
             </div>
-            <div className="h-[180px]">
+            <div className="h-[180px] mt-auto">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                         <defs>
@@ -82,10 +87,10 @@ const LineChartWidget: React.FC<{ widget: Widget; colorIndex: number; liveData?:
                         />
                         <YAxis stroke="#cbd5e1" fontSize={9} tickLine={false} axisLine={false} />
                         <Tooltip
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '8px 12px', fontSize: '11px' }}
+                            contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', padding: '12px', fontSize: '11px' }}
                             labelFormatter={(ts) => new Date(ts as number).toLocaleTimeString()}
                         />
-                        <Area type="monotone" dataKey="value" stroke={color.primary} strokeWidth={2.5} fillOpacity={1} fill={`url(#gradient-${widget.id})`} />
+                        <Area type="monotone" dataKey="value" stroke={color.primary} strokeWidth={3} fillOpacity={1} fill={`url(#gradient-${widget.id})`} animationDuration={1500} />
                     </AreaChart>
                 </ResponsiveContainer>
             </div>
@@ -94,37 +99,41 @@ const LineChartWidget: React.FC<{ widget: Widget; colorIndex: number; liveData?:
 };
 
 // ── Bar Chart Widget ──
-const BarChartWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number }> = ({ widget, colorIndex, currentValue }) => {
-    const data = [{ name: 'Current', value: currentValue || 0 }];
+const BarChartWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const data = [{ name: TRANSLATIONS[language].live, value: currentValue || 0 }];
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full">
-            <div className="flex items-center justify-between mb-4">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
-                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{widget.dataLabel || widget.variableName}</p>
+                    <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex items-center gap-2">
+                        <Zap size={16} className={color.text} />
+                        {widget.name}
+                    </h4>
+                    <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-tighter uppercase">{t.live} {t.plcliveFeed}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${color.bg} ${color.text}`}>
-                        Live
+                    <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${color.bg} ${color.text} shadow-sm border ${color.border}/50`}>
+                        {t.live.toUpperCase()}
                     </div>
                     <InfoTooltip
-                        title="Configuration"
+                        title={t.configuration}
                         content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                     />
                 </div>
             </div>
-            <div className="h-[180px]">
+            <div className="h-[180px] mt-auto">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="name" stroke="#cbd5e1" fontSize={10} tickLine={false} axisLine={false} />
                         <YAxis stroke="#cbd5e1" fontSize={9} tickLine={false} axisLine={false} />
                         <Tooltip
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', padding: '8px 12px', fontSize: '11px' }}
+                            contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)', padding: '12px', fontSize: '11px' }}
                         />
-                        <Bar dataKey="value" fill={color.primary} radius={[6, 6, 0, 0]} />
+                        <Bar dataKey="value" fill={color.primary} radius={[10, 10, 0, 0]} animationDuration={1500} />
                     </BarChart>
                 </ResponsiveContainer>
             </div>
@@ -133,10 +142,11 @@ const BarChartWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
 };
 
 // ── Gauge Widget (SVG) ──
-const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number }> = ({ widget, colorIndex, currentValue }) => {
+const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const value = currentValue || 0;
     const config = widget.config as GaugeConfig;
+    const t = TRANSLATIONS[language];
     const min = config?.min ?? 0;
     const max = config?.max ?? 100;
     
@@ -153,22 +163,24 @@ const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?:
     const dashOffset = arcLength - (percentage / 100) * arcLength;
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col items-center justify-center">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center group text-center">
             <div className="flex items-center gap-2 mb-1">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-2">{widget.dataLabel || widget.variableName}</p>
+            <p className="text-[10px] text-slate-400 font-bold font-mono mb-4 uppercase tracking-tighter opacity-70">
+                {widget.dataLabel || widget.variableName}
+            </p>
             
             <div className="w-[160px] h-[90px] mt-2 relative">
                 <svg viewBox="0 0 200 120" className="w-full h-full overflow-visible">
                     {/* Background arc */}
                     <path
                         d="M 20 110 A 80 80 0 0 1 180 110"
-                        fill="none" stroke="#e2e8f0" strokeWidth="16" strokeLinecap="round"
+                        fill="none" stroke="#f1f5f9" strokeWidth="16" strokeLinecap="round"
                     />
                     {/* Value arc */}
                     <path
@@ -182,54 +194,54 @@ const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?:
                     <g className="transition-transform duration-1000 ease-in-out origin-[100px_110px]">
                         <line
                             x1="100" y1="110" x2="100" y2="40"
-                            stroke="#1e293b" strokeWidth="4" strokeLinecap="round"
+                            stroke="#002060" strokeWidth="4" strokeLinecap="round"
                             transform={`rotate(${angle} 100 110)`}
                         />
                     </g>
                     {/* Center circle */}
-                    <circle cx="100" cy="110" r="10" fill="#1e293b" />
+                    <circle cx="100" cy="110" r="10" fill="#002060" />
                     <circle cx="100" cy="110" r="4" fill="white" />
                 </svg>
             </div>
             
-            {/* Value display moved below the gauge center to avoid needle overlapping */}
             <div className="mt-1 flex flex-col items-center justify-center text-center">
                 <div>
-                    <span className="text-3xl font-black text-slate-900">{value}</span>
+                    <span className="text-3xl font-black text-slate-900 leading-tight">{value}</span>
                     <span className="text-sm text-slate-400 ml-1 font-bold">{config?.unit || ''}</span>
                 </div>
             </div>
             
-            <div className="flex justify-between w-full mt-2 px-1">
-                <span className="text-[10px] text-slate-400 font-bold">{min}</span>
-                <span className="text-[10px] text-slate-400 font-bold">{max}</span>
+            <div className="flex justify-between w-full mt-4 px-2">
+                <span className="text-[10px] text-slate-400 font-black">{min}</span>
+                <span className="text-[10px] text-slate-400 font-black">{max}</span>
             </div>
         </div>
     );
 };
 
 // ── LED Indicator Widget ──
-const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any }> = ({ widget, colorIndex, currentValue }) => {
+const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const status = currentValue === true || currentValue === '1' || currentValue === 'on' || currentValue === 'RUNNING';
+    const t = TRANSLATIONS[language];
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col items-center justify-center text-center">
-            <div className="flex items-center gap-2 mb-4">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
+            <div className="flex items-center gap-2 mb-6">
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                 />
             </div>
-            <div className={`w-16 h-16 rounded-full shadow-lg relative ${status ? 'bg-emerald-500 shadow-emerald-400/30' : 'bg-slate-200'}`}>
+            <div className={`w-20 h-20 rounded-full shadow-2xl relative transition-all duration-700 ${status ? 'bg-emerald-500 shadow-emerald-400/50 scale-110' : 'bg-slate-200 shadow-inner scale-100'}`}>
                 {status && (
                     <div className="absolute inset-0 rounded-full animate-ping bg-emerald-400 opacity-20" />
                 )}
-                <div className="absolute top-2 left-4 w-4 h-2 bg-white/30 rounded-full blur-[1px]" />
+                <div className="absolute top-3 left-5 w-5 h-2.5 bg-white/30 rounded-full blur-[1.5px]" />
             </div>
-            <p className={`mt-4 text-sm font-black tracking-widest ${status ? 'text-emerald-600' : 'text-slate-400'}`}>
-                {status ? 'ACTIVE' : 'INACTIVE'}
+            <p className={`mt-6 text-xs font-black tracking-[0.2em] transition-colors duration-500 ${status ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {status ? t.active.toUpperCase() : t.inactive.toUpperCase()}
             </p>
             <p className="text-[10px] text-slate-400 font-mono mt-1">{widget.dataLabel || widget.variableName}</p>
         </div>
@@ -237,10 +249,11 @@ const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; current
 };
 
 // ── Progress Bar Widget ──
-const ProgressBarWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number }> = ({ widget, colorIndex, currentValue }) => {
+const ProgressBarWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const config = widget.config as GaugeConfig;
     const value = currentValue || 0;
+    const t = TRANSLATIONS[language];
     const min = config?.min ?? 0;
     const max = config?.max ?? 100;
     const pct = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
@@ -253,17 +266,17 @@ const ProgressBarWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
     }, [pct]);
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col justify-center">
-            <div className="flex justify-between items-start mb-4">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-center group">
+            <div className="flex justify-between items-start mb-6">
                 <div>
                     <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+                        <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                         <InfoTooltip
-                            title="Configuration"
+                            title={t.configuration}
                             content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                         />
                     </div>
-                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{widget.dataLabel || widget.variableName}</p>
+                    <p className="text-[10px] text-slate-400 font-bold font-mono mt-1 opacity-70 tracking-tight">{widget.dataLabel || widget.variableName}</p>
                 </div>
                 <div className="text-right shrink-0 ml-4">
                     <span className="text-2xl font-black text-slate-900">{value}</span>
@@ -286,28 +299,31 @@ const ProgressBarWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
 };
 
 // ── Text Log Widget ──
-const TextLogWidget: React.FC<{ widget: Widget; colorIndex: number; liveLogs?: any[] }> = ({ widget, colorIndex, liveLogs }) => {
+const TextLogWidget: React.FC<{ widget: Widget; colorIndex: number; liveLogs?: any[]; language: Language }> = ({ widget, colorIndex, liveLogs, language }) => {
     const logs = liveLogs || [
-        { time: new Date().toLocaleTimeString(), msg: 'Awaiting data...' }
+        { time: new Date().toLocaleTimeString(), msg: TRANSLATIONS[language].awaitingData }
     ];
+    const t = TRANSLATIONS[language];
 
     return (
-        <div className="bg-slate-900 rounded-2xl p-4 shadow-xl border border-slate-800 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <h4 className="text-xs font-bold text-slate-300 uppercase tracking-widest">{widget.name}</h4>
+        <div className="bg-[#002060]/95 backdrop-blur-xl rounded-[2rem] p-6 shadow-2xl border border-white/10 h-full flex flex-col group">
+            <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                    <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">{widget.name}</h4>
                 </div>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                 />
             </div>
-            <div className="flex-1 overflow-y-auto space-y-2 font-mono text-[11px]">
+            <div className="flex-1 overflow-y-auto space-y-3 font-mono text-[11px] custom-scrollbar pr-2">
                 {logs.map((log, i) => (
-                    <div key={i} className="flex gap-3 text-slate-400">
-                        <span className="text-slate-600 shrink-0">[{log.time}]</span>
-                        <span className={log.msg?.includes('Warning') || log.msg?.includes('ALARM') ? 'text-amber-400' : 'text-slate-300'}>{log.msg}</span>
+                    <div key={i} className="flex gap-4 p-2 rounded-xl hover:bg-white/5 transition-colors group/item">
+                        <span className="text-slate-500 font-bold shrink-0 opacity-70">[{log.time}]</span>
+                        <span className={`font-medium ${log.msg?.includes('Warning') || log.msg?.includes('ALARM') ? 'text-amber-400' : 'text-slate-200'}`}>
+                            {log.msg}
+                        </span>
                     </div>
                 ))}
             </div>
@@ -316,48 +332,51 @@ const TextLogWidget: React.FC<{ widget: Widget; colorIndex: number; liveLogs?: a
 };
 
 // ── Multi-State Indicator Widget ──
-const MultiStateIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any }> = ({ widget, colorIndex, currentValue }) => {
+const MultiStateIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const config = widget.config as MultiStateConfig;
+    const t = TRANSLATIONS[language];
     const states = config?.states || [
-        { value: '0', label: 'OFF', color: '#64748b' },
-        { value: '1', label: 'RUNNING', color: '#10b981' },
+        { value: '0', label: t.off, color: '#64748b' },
+        { value: '1', label: t.active, color: '#10b981' },
         { value: '2', label: 'ERROR', color: '#ef4444' }
     ];
     const value = currentValue?.toString() || '0';
-    const currentState = states.find(s => s.value === value) || states[0];
-    const indicatorRef = React.useRef<HTMLDivElement>(null);
+    const bgRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (indicatorRef.current) {
-            indicatorRef.current.style.backgroundColor = currentState.color;
+        if (bgRef.current) {
+            bgRef.current.style.backgroundColor = currentState.color;
         }
     }, [currentState.color]);
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 h-full flex flex-col items-center justify-center text-center">
-            <div className="flex items-center gap-2 mb-4">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
+            <div className="flex items-center gap-2 mb-6">
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                 />
             </div>
             <div
-                ref={indicatorRef}
-                className="px-6 py-3 rounded-xl font-black text-white shadow-lg transition-colors duration-500"
+                ref={bgRef}
+                className="px-8 py-4 rounded-[1.5rem] font-black text-white shadow-2xl transition-all duration-500 text-lg tracking-[0.2em] transform group-hover:scale-105"
             >
-                {currentState.label}
+                {currentState.label.toUpperCase()}
             </div>
-            <p className="mt-4 text-[10px] text-slate-400 font-mono">Value: {value}</p>
+            <p className="mt-6 text-[10px] text-slate-400 font-black tracking-widest opacity-70 uppercase">
+                {t.value}: <span className="text-slate-600">{value}</span>
+            </p>
         </div>
     );
 };
 
 // ── Circular Progress Widget ──
-const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number }> = ({ widget, colorIndex, currentValue }) => {
+const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const config = widget.config as GaugeConfig;
     const value = currentValue || 0;
+    const t = TRANSLATIONS[language];
     const min = config?.min ?? 0;
     const max = config?.max ?? 100;
     const pct = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
@@ -366,23 +385,23 @@ const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; cur
     const offset = circumference - (pct / 100) * circumference;
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col items-center justify-center">
-            <div className="flex items-center gap-2 mb-3">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
+            <div className="flex items-center gap-2 mb-4">
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                 />
             </div>
-            <div className="relative w-32 h-32">
+            <div className="relative w-32 h-32 transform transition-transform duration-700 group-hover:scale-110">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
                     <circle
                         cx="60" cy="60" r={radius}
-                        fill="none" stroke="#f1f5f9" strokeWidth="10"
+                        fill="none" stroke="#f1f5f9" strokeWidth="12"
                     />
                     <circle
                         cx="60" cy="60" r={radius}
-                        fill="none" stroke={color.primary} strokeWidth="10"
+                        fill="none" stroke={color.primary} strokeWidth="12"
                         strokeDasharray={circumference}
                         strokeDashoffset={offset}
                         strokeLinecap="round"
@@ -390,52 +409,56 @@ const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; cur
                     />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl font-black text-slate-900">{value}</span>
-                    <span className="text-[10px] text-slate-400 font-bold">{config?.unit}</span>
+                    <span className="text-3xl font-black text-slate-900 leading-tight">{value}</span>
+                    <span className="text-[10px] text-slate-400 font-black uppercase tracking-tighter">{config?.unit}</span>
                 </div>
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mt-2">{widget.dataLabel || widget.variableName}</p>
+            <p className="text-[10px] text-slate-400 font-black font-mono mt-4 uppercase tracking-tighter opacity-70">
+                {widget.dataLabel || widget.variableName}
+            </p>
         </div>
     );
 };
 
 
 // ── Text Display Widget ──
-const TextDisplayWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any }> = ({ widget, colorIndex, currentValue }) => {
+const TextDisplayWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
 
     return (
-        <div className={`bg-gradient-to-br from-white to-slate-50 rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full relative overflow-hidden group`}>
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full relative overflow-hidden group">
             {/* Glow effect */}
             <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br ${color.gradient} opacity-5 blur-3xl group-hover:opacity-10 transition-all`} />
             <div className="relative z-10">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{widget.name}</p>
-                        <InfoTooltip
-                            title="Configuration"
-                            content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
-                        />
-                    </div>
-                    <div className={`p-2 rounded-xl ${color.bg} ${color.ring} ring-4`}>
                         <Activity size={16} className={color.text} />
+                        <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                     </div>
+                    <InfoTooltip
+                        title={t.configuration}
+                        content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
+                    />
                 </div>
-                <div className="mt-4 flex items-baseline gap-2">
-                    <h3 className="text-4xl font-black text-slate-900 tracking-tight">{currentValue ?? '---'}</h3>
-                    <span className="text-sm font-bold text-slate-400">{widget.dataLabel || 'units'}</span>
+                <div className="mt-8 flex items-baseline gap-2">
+                    <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{currentValue ?? '---'}</h3>
+                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{widget.dataLabel || t.units}</span>
                 </div>
-                <p className="text-[10px] font-mono text-slate-400 mt-2">{widget.mqttTopic} → {widget.variableName}</p>
+                <p className="text-[10px] font-black font-mono text-slate-400 mt-4 uppercase tracking-tighter opacity-70">
+                    {widget.mqttTopic} → {widget.variableName}
+                </p>
             </div>
         </div>
     );
 };
 
 // ── Status Indicator Widget ──
-const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any }> = ({ widget, colorIndex, currentValue }) => {
+const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const [blinking, setBlinking] = useState(true);
     const status = currentValue || 'OFFLINE';
+    const t = TRANSLATIONS[language];
 
     useEffect(() => {
         const interval = setInterval(() => setBlinking(b => !b), 1200);
@@ -443,22 +466,26 @@ const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; curr
     }, []);
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col items-center justify-center text-center">
-            <div className="flex items-center gap-2 mb-3">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
+            <div className="flex items-center gap-2 mb-6">
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}${widget.variableName ? `\nVariable: ${widget.variableName}` : ''}`}
                 />
             </div>
-            <div className="relative mb-3">
-                <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${color.gradient} flex items-center justify-center shadow-lg`}>
-                    <Zap size={28} className="text-white" />
+            <div className="relative mb-6 transform transition-transform duration-700 group-hover:scale-110">
+                <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${color.gradient} flex items-center justify-center shadow-2xl relative z-10`}>
+                    <Zap size={32} className="text-white" />
                 </div>
-                <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full ${status === 'ONLINE' || status === 'RUNNING' ? 'bg-emerald-500' : 'bg-slate-400'} border-2 border-white transition-opacity ${blinking ? 'opacity-100' : 'opacity-40'}`} />
+                <div className={`absolute -top-2 -right-2 w-7 h-7 rounded-full ${status === 'ONLINE' || status === 'RUNNING' ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.6)]' : 'bg-slate-400'} border-4 border-white z-20 transition-opacity duration-500 ${blinking ? 'opacity-100' : 'opacity-40'}`} />
             </div>
-            <p className={`text-lg font-black ${status === 'ONLINE' || status === 'RUNNING' ? 'text-emerald-600' : 'text-slate-400'}`}>{status}</p>
-            <p className="text-[10px] text-slate-400 font-mono mt-1">{widget.dataLabel || widget.variableName}</p>
+            <p className={`text-xl font-black tracking-widest transition-colors duration-500 ${status === 'ONLINE' || status === 'RUNNING' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {status}
+            </p>
+            <p className="text-[10px] text-slate-400 font-black font-mono mt-2 uppercase tracking-tighter opacity-70">
+                {widget.dataLabel || widget.variableName}
+            </p>
         </div>
     );
 };
@@ -468,10 +495,11 @@ const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; curr
 // ══════════════════════════════════════════════════════════
 
 // ── Button Widget ──
-const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview: boolean; currentValue?: any }> = ({ widget, colorIndex, isPreview, currentValue }) => {
+const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview: boolean; currentValue?: any; language: Language }> = ({ widget, colorIndex, isPreview, currentValue, language }) => {
     const color = getColor(colorIndex);
     const [pressed, setPressed] = useState(false);
     const config = widget.config as ButtonConfig;
+    const t = TRANSLATIONS[language];
 
     const handleAction = () => {
         if (isPreview) {
@@ -480,11 +508,9 @@ const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview: bo
             return;
         }
 
-        // Use the Read-Modify-Write pattern if a variableName is set
         if (widget.variableName) {
             mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, config?.payload || 'TRIGGER');
         } else {
-            // Fallback for simple commands
             mqttService.publishRaw(widget.mqttTopic, config?.payload || 'TRIGGER');
         }
 
@@ -493,85 +519,113 @@ const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview: bo
     };
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
+            <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}\nAction: ${widget.mqttAction}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-4">{widget.dataLabel || widget.variableName}</p>
+            <p className="text-[10px] text-slate-400 font-black font-mono mb-6 uppercase tracking-tighter opacity-70">
+                {widget.dataLabel || widget.variableName}
+            </p>
             <div className="flex-1 flex items-center justify-center">
                 <button
                     onClick={handleAction}
-                    className={`w-full py-4 rounded-2xl font-bold text-white text-sm shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all bg-gradient-to-r ${color.gradient} ${pressed ? 'scale-95' : 'scale-100'}`}
+                    className={`w-full py-5 rounded-2xl font-black text-white text-xs tracking-[0.2em] shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-gradient-to-r ${color.gradient} ${pressed ? 'scale-95 brightness-90' : 'scale-100 hover:-translate-y-1'}`}
                 >
-                    <Send size={16} className="inline mr-2" />
-                    {config?.label || 'SEND COMMAND'}
+                    <Send size={14} className="inline mr-3 -translate-y-0.5" />
+                    {(config?.label || t.sendCommand).toUpperCase()}
                 </button>
             </div>
-            <p className="text-[10px] text-slate-400 text-center mt-3 font-mono">→ {widget.mqttTopic}</p>
+            <p className="text-[10px] text-slate-400 text-center mt-6 font-black font-mono tracking-tighter opacity-50 italic">
+                → {widget.mqttTopic}
+            </p>
         </div>
     );
 };
 
 // ── Toggle Widget ──
-const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any }> = ({ widget, colorIndex, currentValue }) => {
+const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const [isOn, setIsOn] = useState(false);
+    const [locked, setLocked] = useState(false);
+    const lockTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
 
-    // Sync with live data
+    const parseValue = (val: any): boolean => {
+        if (val === undefined || val === null) return false;
+        const s = String(val).toLowerCase();
+        return s === 'true' || s === '1' || s === 'on' || s === 'active';
+    };
+
+    // Sync with live MQTT data — but only when NOT locked (user just clicked)
     useEffect(() => {
+        if (locked) return;
         if (currentValue !== undefined) {
-            const val = String(currentValue).toLowerCase();
-            setIsOn(val === 'true' || val === '1' || val === 'on' || val === 'active');
+            setIsOn(parseValue(currentValue));
         }
-    }, [currentValue]);
+    }, [currentValue, locked]);
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => { if (lockTimerRef.current) clearTimeout(lockTimerRef.current); };
+    }, []);
 
     const handleToggle = () => {
         const nextState = !isOn;
         setIsOn(nextState);
+        // Lock for 2 s so MQTT subscription echo cannot revert the optimistic state
+        setLocked(true);
+        if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
+        lockTimerRef.current = setTimeout(() => {
+            setLocked(false);
+        }, 2000);
         mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, nextState);
     };
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col items-center justify-center text-center">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
             <div className="flex items-center gap-2 mb-1">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-5">{widget.dataLabel || widget.variableName}</p>
+            <p className="text-[10px] text-slate-400 font-black font-mono mb-6 uppercase tracking-tighter opacity-70">
+                {widget.dataLabel || widget.variableName}
+            </p>
 
             <button
                 onClick={handleToggle}
-                className="relative focus:outline-none mb-3 group"
+                className="relative focus:outline-none mb-4 group transform transition-transform duration-500 hover:scale-110 active:scale-95"
                 title="Toggle switch"
             >
                 {isOn ? (
-                    <ToggleRight size={64} className={`${color.text} transition-colors drop-shadow-sm`} />
+                    <ToggleRight size={72} className={`${color.text} transition-colors drop-shadow-2xl`} />
                 ) : (
-                    <ToggleLeft size={64} className="text-slate-300 group-hover:text-slate-400 transition-colors" />
+                    <ToggleLeft size={72} className="text-slate-200 group-hover:text-slate-300 transition-colors" />
                 )}
             </button>
 
-            <div className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${isOn ? `bg-gradient-to-r ${color.gradient} text-white shadow-md` : 'bg-slate-100 text-slate-500'
-                }`}>
-                {isOn ? 'ON' : 'OFF'}
+            <div className={`px-6 py-2 rounded-full text-xs font-black tracking-[0.2em] transition-all duration-500 ${isOn ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg` : 'bg-slate-100 text-slate-400'}`}>
+                {isOn ? t.on.toUpperCase() : t.off.toUpperCase()}
             </div>
-            <p className="text-[10px] text-slate-400 mt-3 font-mono">→ {widget.mqttTopic}</p>
+            <p className="text-[10px] text-slate-400 mt-6 font-black font-mono tracking-tighter opacity-50 italic">
+                → {widget.mqttTopic}
+            </p>
         </div>
     );
 };
 
 // ── Slider Widget ──
-const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any }> = ({ widget, colorIndex, currentValue }) => {
+const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const [value, setValue] = useState(50);
     const color = getColor(colorIndex);
     const config = widget.config as GaugeConfig;
+    const t = TRANSLATIONS[language];
     const min = config?.min ?? 0;
     const max = config?.max ?? 100;
     const sliderRef = React.useRef<HTMLInputElement>(null);
@@ -586,7 +640,7 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
     useEffect(() => {
         if (sliderRef.current) {
             const pct = ((value - min) / (max - min)) * 100;
-            sliderRef.current.style.background = `linear-gradient(to right, ${color.primary} 0%, ${color.primary} ${pct}%, #e2e8f0 ${pct}%, #e2e8f0 100%)`;
+            sliderRef.current.style.background = `linear-gradient(to right, ${color.primary} 0%, ${color.primary} ${pct}%, #f1f5f9 ${pct}%, #f1f5f9 100%)`;
         }
     }, [value, min, max, color.primary]);
 
@@ -595,20 +649,22 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
     };
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
             <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-4">{widget.dataLabel || widget.variableName}</p>
+            <p className="text-[10px] text-slate-400 font-black font-mono mb-4 uppercase tracking-tighter opacity-70">
+                {widget.dataLabel || widget.variableName}
+            </p>
 
-            <div className="flex-1 flex flex-col items-center justify-center gap-2">
-                <div className="text-3xl font-black text-slate-900">{value}</div>
+            <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                <div className="text-4xl font-black text-slate-900 leading-none transform transition-transform duration-500 group-hover:scale-110 tracking-tighter">{value}</div>
 
-                <div className="w-full relative mt-2">
+                <div className="w-full relative mt-4">
                     <input
                         ref={sliderRef}
                         type="range"
@@ -618,25 +674,28 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                         onChange={(e) => setValue(Number(e.target.value))}
                         onMouseUp={(e) => handlePublish(Number((e.target as HTMLInputElement).value))}
                         onTouchEnd={(e) => handlePublish(Number((e.target as HTMLInputElement).value))}
-                        className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                        className="w-full h-3 rounded-full appearance-none cursor-pointer shadow-inner"
                         title="Slider control"
                     />
                 </div>
 
-                <div className="flex justify-between w-full text-[10px] text-slate-400 font-bold">
+                <div className="flex justify-between w-full text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
                     <span>{min}</span>
                     <span>{max}</span>
                 </div>
             </div>
-            <p className="text-[10px] text-slate-400 text-center mt-3 font-mono">→ {widget.mqttTopic}</p>
+            <p className="text-[10px] text-slate-400 text-center mt-6 font-black font-mono tracking-tighter opacity-50 italic">
+                → {widget.mqttTopic}
+            </p>
         </div>
     );
 };
 
 // ── Text Input Widget ──
-const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any }> = ({ widget, colorIndex, currentValue }) => {
+const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const [text, setText] = useState('');
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
 
     // Sync with live data
     useEffect(() => {
@@ -650,44 +709,49 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
     };
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
             <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                    <Type size={14} className={color.text} />
-                    <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+                    <Type size={16} className={color.text} />
+                    <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 </div>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-4">{widget.dataLabel || widget.variableName}</p>
+            <p className="text-[10px] text-slate-400 font-black font-mono mb-6 uppercase tracking-tighter opacity-70">
+                {widget.dataLabel || widget.variableName}
+            </p>
 
-            <div className="flex-1 flex flex-col justify-center gap-3">
+            <div className="flex-1 flex flex-col justify-center gap-4">
                 <input
                     type="text"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder="Enter value..."
-                    className={`w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:${color.border} focus:ring-4 ${color.ring} outline-none text-sm font-medium transition-all`}
+                    placeholder={`${t.enterValue}...`}
+                    className="w-full px-5 py-4 rounded-2xl bg-white/50 border-2 border-slate-100 focus:border-[#002060] focus:ring-4 focus:ring-slate-100 outline-none text-sm font-black transition-all duration-300 placeholder:text-slate-300 text-slate-900 shadow-inner"
                 />
                 <button
                     onClick={handlePublish}
-                    className={`w-full py-3 rounded-xl font-bold text-white text-sm bg-gradient-to-r ${color.gradient} shadow-md hover:shadow-lg transition-all`}
+                    className={`w-full py-4 rounded-2xl font-black text-white text-xs tracking-[0.2em] shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-gradient-to-r ${color.gradient} hover:-translate-y-1 active:scale-95`}
                 >
-                    <Send size={14} className="inline mr-2" />
-                    Publish
+                    <Send size={14} className="inline mr-3 -translate-y-0.5" />
+                    {t.publish.toUpperCase()}
                 </button>
             </div>
-            <p className="text-[10px] text-slate-400 text-center mt-3 font-mono">→ {widget.mqttTopic}</p>
+            <p className="text-[10px] text-slate-400 text-center mt-6 font-black font-mono tracking-tighter opacity-50 italic">
+                → {widget.mqttTopic}
+            </p>
         </div>
     );
 };
 
 // ── Number Input Widget ──
-const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any }> = ({ widget, colorIndex, currentValue }) => {
+const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const [num, setNum] = useState(0);
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
 
     // Sync with live data
     useEffect(() => {
@@ -701,28 +765,30 @@ const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
     };
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
             <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
-                    <Hash size={14} className={color.text} />
-                    <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+                    <Hash size={16} className={color.text} />
+                    <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 </div>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-4">{widget.dataLabel || widget.variableName}</p>
+            <p className="text-[10px] text-slate-400 font-black font-mono mb-6 uppercase tracking-tighter opacity-70">
+                {widget.dataLabel || widget.variableName}
+            </p>
 
-            <div className="flex-1 flex flex-col justify-center gap-3">
-                <div className="flex items-center gap-2">
+            <div className="flex-1 flex flex-col justify-center gap-6">
+                <div className="flex items-center gap-4">
                     <button
                         onClick={() => {
                             const n = num - 1;
                             setNum(n);
                             mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, n);
                         }}
-                        className="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors text-xl font-bold text-slate-600"
+                        className="w-14 h-14 rounded-2xl bg-white/50 border-2 border-slate-100 hover:border-[#002060] hover:bg-white text-[#002060] transition-all duration-300 text-2xl font-black shadow-lg flex items-center justify-center active:scale-90"
                     >
                         −
                     </button>
@@ -733,7 +799,7 @@ const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
                         onBlur={handlePublish}
                         onKeyDown={(e) => e.key === 'Enter' && handlePublish()}
                         title="Number value"
-                        className="flex-1 text-center px-4 py-3 rounded-xl border-2 border-slate-200 outline-none text-lg font-bold text-slate-900"
+                        className="flex-1 text-center px-4 py-4 rounded-2xl bg-white/50 border-2 border-slate-100 outline-none text-2xl font-black text-slate-900 shadow-inner focus:border-[#002060] transition-all"
                     />
                     <button
                         onClick={() => {
@@ -741,48 +807,56 @@ const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
                             setNum(n);
                             mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, n);
                         }}
-                        className="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors text-xl font-bold text-slate-600"
+                        className="w-14 h-14 rounded-2xl bg-white/50 border-2 border-slate-100 hover:border-[#002060] hover:bg-white text-[#002060] transition-all duration-300 text-2xl font-black shadow-lg flex items-center justify-center active:scale-90"
                     >
                         +
                     </button>
                 </div>
             </div>
-            <p className="text-[10px] text-slate-400 text-center mt-3 font-mono">→ {widget.mqttTopic}</p>
+            <p className="text-[10px] text-slate-400 text-center mt-6 font-black font-mono tracking-tighter opacity-50 italic">
+                → {widget.mqttTopic}
+            </p>
         </div>
     );
 };
 // ── Color Picker Widget ──
-const ColorPickerWidget: React.FC<{ widget: Widget; colorIndex: number }> = ({ widget, colorIndex }) => {
-    const [color, setColor] = useState('#6366f1');
-    const chipRef = React.useRef<HTMLDivElement>(null);
+const ColorPickerWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
+    const [colorValue, setColorValue] = useState('#002060');
+    const t = TRANSLATIONS[language];
+    const bgRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (chipRef.current) {
-            chipRef.current.style.backgroundColor = color;
+        if (bgRef.current) {
+            bgRef.current.style.backgroundColor = colorValue;
         }
-    }, [color]);
+    }, [colorValue]);
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 h-full flex flex-col">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
             <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-4">{widget.mqttTopic}</p>
-            <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <p className="text-[10px] text-slate-400 font-black font-mono mb-6 uppercase tracking-tighter opacity-70">
+                {widget.mqttTopic}
+            </p>
+            <div className="flex-1 flex flex-col items-center justify-center gap-6">
                 <div
-                    ref={chipRef}
-                    className="w-16 h-16 rounded-2xl shadow-lg border-4 border-white transition-colors duration-300"
+                    ref={bgRef}
+                    className="w-24 h-24 rounded-[2rem] shadow-2xl border-4 border-white transition-all duration-500 transform group-hover:scale-110"
                 />
                 <input
                     type="color"
                     title="Choose color"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="w-full h-10 rounded-lg cursor-pointer border-none bg-transparent"
+                    value={colorValue}
+                    onChange={(e) => {
+                        setColorValue(e.target.value);
+                        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, e.target.value);
+                    }}
+                    className="w-full h-14 rounded-2xl cursor-pointer border-none bg-white/50 p-1 shadow-inner overflow-hidden"
                 />
             </div>
         </div>
@@ -790,26 +864,32 @@ const ColorPickerWidget: React.FC<{ widget: Widget; colorIndex: number }> = ({ w
 };
 
 // ── Time Picker Widget ──
-const TimePickerWidget: React.FC<{ widget: Widget; colorIndex: number }> = ({ widget, colorIndex }) => {
+const TimePickerWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
     const [time, setTime] = useState('12:00');
+    const t = TRANSLATIONS[language];
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 h-full flex flex-col">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
             <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-4">{widget.mqttTopic}</p>
-            <div className="flex-1 flex items-center justify-center gap-2">
+            <p className="text-[10px] text-slate-400 font-black font-mono mb-6 uppercase tracking-tighter opacity-70">
+                {widget.mqttTopic}
+            </p>
+            <div className="flex-1 flex items-center justify-center">
                 <input
                     type="time"
                     title="Set time"
                     value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    className="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-frost-500"
+                    onChange={(e) => {
+                        setTime(e.target.value);
+                        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, e.target.value);
+                    }}
+                    className="px-8 py-4 rounded-2xl bg-white/50 border-2 border-slate-100 font-black text-2xl text-[#002060] outline-none focus:border-[#002060] focus:ring-4 focus:ring-slate-100 transition-all shadow-inner"
                 />
             </div>
         </div>
@@ -817,25 +897,31 @@ const TimePickerWidget: React.FC<{ widget: Widget; colorIndex: number }> = ({ wi
 };
 
 // ── Combo Box Widget ──
-const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number }> = ({ widget, colorIndex }) => {
+const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
     const [selected, setSelected] = useState('Option 1');
+    const t = TRANSLATIONS[language];
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 h-full flex flex-col">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
             <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}`}
                 />
             </div>
-            <p className="text-[10px] text-slate-400 font-mono mb-4">{widget.mqttTopic}</p>
+            <p className="text-[10px] text-slate-400 font-black font-mono mb-6 uppercase tracking-tighter opacity-70">
+                {widget.mqttTopic}
+            </p>
             <div className="flex-1 flex items-center justify-center">
                 <select
                     title="Select option"
                     value={selected}
-                    onChange={(e) => setSelected(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-frost-500 bg-white"
+                    onChange={(e) => {
+                        setSelected(e.target.value);
+                        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, e.target.value);
+                    }}
+                    className="w-full px-6 py-4 rounded-2xl bg-white/50 border-2 border-slate-100 font-black text-slate-900 outline-none focus:border-[#002060] focus:ring-4 focus:ring-slate-100 transition-all shadow-inner appearance-none relative"
                 >
                     <option>Option 1</option>
                     <option>Option 2</option>
@@ -852,22 +938,19 @@ const RadioButtonOption: React.FC<{
     id: string,
     selected: boolean,
     primaryColor: string,
+    borderClass: string,
     onSelect: () => void
-}> = ({ opt, id, selected, primaryColor, onSelect }) => {
-    const outerRef = React.useRef<HTMLDivElement>(null);
-    const innerRef = React.useRef<HTMLDivElement>(null);
+}> = ({ opt, id, selected, primaryColor, borderClass, onSelect }) => {
+    const dotRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (outerRef.current) {
-            outerRef.current.style.borderColor = selected ? primaryColor : '';
+        if (dotRef.current) {
+            dotRef.current.style.backgroundColor = primaryColor;
         }
-        if (innerRef.current && selected) {
-            innerRef.current.style.backgroundColor = primaryColor;
-        }
-    }, [selected, primaryColor]);
+    }, [primaryColor, selected]);
 
     return (
-        <label className="flex items-center gap-3 cursor-pointer group">
+        <label className="flex items-center gap-4 cursor-pointer group">
             <input
                 type="radio"
                 name={`radio-${id}`}
@@ -876,30 +959,30 @@ const RadioButtonOption: React.FC<{
                 className="hidden"
             />
             <div
-                ref={outerRef}
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selected ? '' : 'border-slate-200'}`}
+                className={`w-7 h-7 rounded-full border-4 flex items-center justify-center transition-all duration-500 ${selected ? `${borderClass} scale-110 shadow-lg` : 'border-slate-100 bg-slate-50'}`}
             >
-                {selected && <div ref={innerRef} className="w-2.5 h-2.5 rounded-full" />}
+                {selected && <div ref={dotRef} className="w-3.5 h-3.5 rounded-full shadow-inner animate-in fade-in zoom-in duration-500" />}
             </div>
-            <span className={`text-sm font-bold transition-colors ${selected ? 'text-slate-900' : 'text-slate-500'}`}>Option {opt}</span>
+            <span className={`text-sm font-black uppercase tracking-widest transition-all duration-300 ${selected ? 'text-[#002060] translate-x-2' : 'text-slate-400'}`}>Option {opt}</span>
         </label>
     );
 };
 
-const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number }> = ({ widget, colorIndex }) => {
+const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
     const [selected, setSelected] = useState('1');
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
 
     return (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-bold text-slate-800">{widget.name}</h4>
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
+            <div className="flex items-center justify-between mb-6">
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                 <InfoTooltip
-                    title="Configuration"
+                    title={t.configuration}
                     content={`Topic: ${widget.mqttTopic}`}
                 />
             </div>
-            <div className="flex-1 flex flex-col justify-center gap-3">
+            <div className="flex-1 flex flex-col justify-center gap-5">
                 {['1', '2', '3'].map(opt => (
                     <RadioButtonOption
                         key={opt}
@@ -907,7 +990,11 @@ const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number }> = ({ 
                         id={widget.id}
                         selected={selected === opt}
                         primaryColor={color.primary}
-                        onSelect={() => setSelected(opt)}
+                        borderClass={color.border.replace('border-', 'border-')} // just using the class from color object
+                        onSelect={() => {
+                            setSelected(opt);
+                            mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, opt);
+                        }}
                     />
                 ))}
             </div>
@@ -921,6 +1008,7 @@ const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number }> = ({ 
 // ══════════════════════════════════════════════════════════
 interface WidgetRendererProps {
     widget: Widget;
+    language?: Language;
     colorIndex?: number;
     isPreview?: boolean;  // true when in admin designer preview mode
     currentData?: any;    // The current data for this widget (extracted from MQTT)
@@ -930,6 +1018,7 @@ interface WidgetRendererProps {
 
 export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     widget,
+    language = 'fr',
     colorIndex = 0,
     isPreview = false,
     currentData,
@@ -941,54 +1030,62 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     const displayHistory = isPreview ? generateDemoTimeSeries() : historyData;
 
     const renderWidget = () => {
+        const t = TRANSLATIONS[language];
         switch (widget.widgetType) {
             // Reading widgets
             case ReadingWidgetType.LINE_CHART:
-                return <LineChartWidget widget={widget} colorIndex={colorIndex} liveData={displayHistory} />;
+                return <LineChartWidget widget={widget} colorIndex={colorIndex} liveData={displayHistory} language={language} />;
             case ReadingWidgetType.BAR_CHART:
-                return <BarChartWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <BarChartWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ReadingWidgetType.GAUGE:
-                return <GaugeWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <GaugeWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ReadingWidgetType.TEXT_DISPLAY:
-                return <TextDisplayWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <TextDisplayWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ReadingWidgetType.LED_INDICATOR:
-                return <LEDIndicatorWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <LEDIndicatorWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ReadingWidgetType.MULTI_STATE_INDICATOR:
-                return <MultiStateIndicatorWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <MultiStateIndicatorWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ReadingWidgetType.PROGRESS_BAR:
-                return <ProgressBarWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <ProgressBarWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ReadingWidgetType.CIRCULAR_PROGRESS:
-                return <CircularProgressWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <CircularProgressWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ReadingWidgetType.TEXT_LOG:
-                return <TextLogWidget widget={widget} colorIndex={colorIndex} liveLogs={displayHistory} />;
+                return <TextLogWidget widget={widget} colorIndex={colorIndex} liveLogs={displayHistory} language={language} />;
             case ReadingWidgetType.STATUS_INDICATOR:
-                return <StatusIndicatorWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <StatusIndicatorWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
 
             // Controlling widgets
             case ControllingWidgetType.BUTTON:
-                return <ButtonWidget widget={widget} colorIndex={colorIndex} isPreview={isPreview} currentValue={displayValue} />;
+                return <ButtonWidget widget={widget} colorIndex={colorIndex} isPreview={isPreview} currentValue={displayValue} language={language} />;
             case ControllingWidgetType.TOGGLE:
-                return <ToggleWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <ToggleWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ControllingWidgetType.SLIDER:
-                return <SliderWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <SliderWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ControllingWidgetType.TEXT_INPUT:
-                return <TextInputWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <TextInputWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ControllingWidgetType.NUMBER_INPUT:
-                return <NumberInputWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} />;
+                return <NumberInputWidget widget={widget} colorIndex={colorIndex} currentValue={displayValue} language={language} />;
             case ControllingWidgetType.COLOR_PICKER:
-                return <ColorPickerWidget widget={widget} colorIndex={colorIndex} />;
-            case ControllingWidgetType.COMBO_BOX:
-                return <ComboBoxWidget widget={widget} colorIndex={colorIndex} />;
-            case ControllingWidgetType.RADIO_BUTTONS:
-                return <RadioButtonsWidget widget={widget} colorIndex={colorIndex} />;
+                return <ColorPickerWidget widget={widget} colorIndex={colorIndex} language={language} />;
             case ControllingWidgetType.TIME_PICKER:
-                return <TimePickerWidget widget={widget} colorIndex={colorIndex} />;
+                return <TimePickerWidget widget={widget} colorIndex={colorIndex} language={language} />;
+            case ControllingWidgetType.COMBO_BOX:
+                return <ComboBoxWidget widget={widget} colorIndex={colorIndex} language={language} />;
+            case ControllingWidgetType.RADIO_BUTTONS:
+                return <RadioButtonsWidget widget={widget} colorIndex={colorIndex} language={language} />;
 
+            default:
+                return (
+                    <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
+                        <Info size={32} className="mb-2 opacity-20" />
+                        <p className="text-xs font-black uppercase tracking-widest">{t?.unsupportedWidget || 'Unsupported Widget'}</p>
+                    </div>
+                );
         }
     };
 
     return (
-        <div className={`relative h-full transition-all duration-500 ${isAlarm ? 'ring-2 ring-red-500/40 rounded-2xl ring-offset-1' : ''}`}>
+        <div className={`relative h-full transition-all duration-500 animate-in fade-in slide-in-from-bottom-2 ${isAlarm ? 'ring-2 ring-red-500/40 rounded-2xl ring-offset-1 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : ''}`}>
             {isAlarm && (
                 <div className="absolute -top-2 -right-2 z-20 bg-red-600 text-white p-1.5 rounded-full shadow-lg animate-bounce border-2 border-white">
                     <AlertTriangle size={14} />

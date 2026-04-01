@@ -163,8 +163,9 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
              
              return (
                <div key={widget.id}>
-                 <WidgetRenderer
+               <WidgetRenderer
                    widget={widget}
+                   language={user.language}
                    colorIndex={index}
                    currentData={val}
                    isPreview={false}

@@ -1,3 +1,5 @@
+export type Language = 'en' | 'fr';
+
 export enum UserRole {
   ADMIN = 'ADMIN',
   CLIENT = 'CLIENT'
@@ -257,4 +259,58 @@ export interface Translation {
   enableAlarmSound: string;
   disableAlarmSound: string;
   testSound: string;
+
+  // MQTT Status
+  brokerOnline: string;
+  brokerConnecting: string;
+  brokerError: string;
+  brokerOffline: string;
+  lastUpdate: string;
+  ago: string;
+  seconds: string;
+  minutes: string;
+  hours: string;
+  // Alarm System
+  alarmHistory: string;
+  alarmAuditLog: string;
+  status: string;
+  alarm: string;
+  value: string;
+  threshold: string;
+  created: string;
+  details: string;
+  activeStatus: string;
+  acknowledgedStatus: string;
+  resolvedStatus: string;
+  lowSeverity: string;
+  mediumSeverity: string;
+  highSeverity: string;
+  criticalSeverity: string;
+  autoResolvedAt: string;
+  acknowledgedAtLabel: string;
+  monitoringActive: string;
+  confirmClearHistory: string;
+  limit: string;
+  refresh: string;
+  clearHistory: string;
+  systemRunningSmoothly: string;
+  noAlarmHistory: string;
+  vsLastHour: string;
+  
+  // Dashboard & Widgets
+  dashboardLoading: string;
+  monitoringUnit: string;
+  plcliveFeed: string;
+  noWidgets: string;
+  awaitingData: string;
+  sendCommand: string;
+  on: string;
+  off: string;
+  publish: string;
+  enterValue: string;
+  option: string;
+  units: string;
+  configuration: string;
+  live: string;
+  unsupportedWidget: string;
 }
