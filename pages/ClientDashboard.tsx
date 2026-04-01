@@ -61,6 +61,26 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
         setWidgets(fetchedWidgets);
         mqttService.setMonitoredWidgets(fetchedWidgets);
 
+        // Pre-populate with last known data from cache
+        const cachedState = mqttService.getCurrentState();
+        let initialLiveData = {};
+        const initialHistoryData: Record<string, any[]> = {};
+
+        Object.keys(cachedState).forEach(topic => {
+          const payload = cachedState[topic];
+          initialLiveData = { ...initialLiveData, ...payload };
+          
+          Object.keys(payload).forEach(key => {
+            const val = payload[key];
+            if (typeof val === 'number') {
+              initialHistoryData[key] = [{ timestamp: Date.now(), value: val }];
+            }
+          });
+        });
+
+        setLiveData(initialLiveData);
+        setHistoryData(initialHistoryData);
+
         // Subscribe to all unique topics used by widgets
         const uniqueTopics = new Set<string>();
         fetchedWidgets.forEach(w => uniqueTopics.add(w.mqttTopic));

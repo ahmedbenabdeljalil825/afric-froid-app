@@ -13,7 +13,37 @@ class MQTTService {
     private topicState: Record<string, any> = {};
     private monitoredWidgets: Widget[] = [];
     private activeAlarmWidgets: Set<string> = new Set();
+    private readonly STORAGE_KEY = 'af_mqtt_state';
     public status: 'connected' | 'disconnected' | 'connecting' | 'error' = 'disconnected';
+
+    constructor() {
+        this.loadStateFromStorage();
+    }
+
+    private loadStateFromStorage() {
+        if (typeof window === 'undefined' || !window.localStorage) return;
+        try {
+            const saved = localStorage.getItem(this.STORAGE_KEY);
+            if (saved) {
+                this.topicState = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('[MQTT] Failed to load state from storage:', e);
+        }
+    }
+
+    private saveStateToStorage() {
+        if (typeof window === 'undefined' || !window.localStorage) return;
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.topicState));
+        } catch (e) {
+            console.error('[MQTT] Failed to save state to storage:', e);
+        }
+    }
+
+    public getCurrentState() {
+        return JSON.parse(JSON.stringify(this.topicState));
+    }
 
     connect(config: MqttConfig) {
         if (this.client) {
@@ -118,6 +148,7 @@ class MQTTService {
 
             // Store locally for future "Read-Modify-Write" operations
             this.topicState[topic] = payload;
+            this.saveStateToStorage();
 
             // Check for alarms
             this.checkThresholds(topic, payload);
@@ -157,6 +188,7 @@ class MQTTService {
                 // console.log(`Published update to ${topic}:`, payload);
                 // Optimistically update local state to avoid race conditions
                 this.topicState[topic] = newState;
+                this.saveStateToStorage();
             }
         });
     }

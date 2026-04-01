@@ -60,12 +60,29 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 
         setWidgets(fetchedWidgets);
 
+        // Pre-populate with last known data from cache
+        const cachedState = mqttService.getCurrentState();
+        let initialLiveData = {};
+        const telemetryTopic = user.mqttConfig?.topics.telemetry || 'telemetry';
+
+        Object.keys(cachedState).forEach(topic => {
+          const payload = cachedState[topic];
+          initialLiveData = { ...initialLiveData, ...payload };
+          
+          if (topic === telemetryTopic) {
+            setTelemetry(payload);
+            if (payload.setpoint !== undefined) {
+                setTargetSetpoint(payload.setpoint.toString());
+            }
+          }
+        });
+        setLiveData(initialLiveData);
+
         // Collect all unique topics
         const uniqueTopics = new Set<string>();
         fetchedWidgets.forEach(w => uniqueTopics.add(w.mqttTopic));
 
         // Always add telemetry for hardcoded controls
-        const telemetryTopic = user.mqttConfig?.topics.telemetry || 'telemetry';
         uniqueTopics.add(telemetryTopic);
 
         uniqueTopics.forEach(topic => {
