@@ -287,7 +287,8 @@ const ProgressBarWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
             <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
                 <div
                     ref={barRef}
-                    className={`h-full bg-gradient-to-r ${color.gradient} rounded-full transition-all duration-1000`}
+                    className="h-full rounded-full transition-all duration-1000"
+                    style={{ backgroundColor: color.primary }}
                 />
             </div>
             <div className="flex justify-between mt-2 text-[10px] font-bold text-slate-400">
@@ -429,7 +430,7 @@ const TextDisplayWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
     return (
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full relative overflow-hidden group">
             {/* Glow effect */}
-            <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full bg-gradient-to-br ${color.gradient} opacity-5 blur-3xl group-hover:opacity-10 transition-all`} />
+            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-5 blur-3xl group-hover:opacity-10 transition-all" style={{ backgroundColor: color.primary }} />
             <div className="relative z-10">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -475,7 +476,7 @@ const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; curr
                 />
             </div>
             <div className="relative mb-6 transform transition-transform duration-700 group-hover:scale-110">
-                <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${color.gradient} flex items-center justify-center shadow-2xl relative z-10`}>
+                <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl relative z-10" style={{ backgroundColor: color.primary }}>
                     <Zap size={32} className="text-white" />
                 </div>
                 <div className={`absolute -top-2 -right-2 w-7 h-7 rounded-full ${status === 'ONLINE' || status === 'RUNNING' ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.6)]' : 'bg-slate-400'} border-4 border-white z-20 transition-opacity duration-500 ${blinking ? 'opacity-100' : 'opacity-40'}`} />
@@ -533,7 +534,8 @@ const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview: bo
             <div className="flex-1 flex items-center justify-center">
                 <button
                     onClick={handleAction}
-                    className={`w-full py-5 rounded-2xl font-black text-white text-xs tracking-[0.2em] shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-gradient-to-r ${color.gradient} ${pressed ? 'scale-95 brightness-90' : 'scale-100 hover:-translate-y-1'}`}
+                    className={`w-full py-5 rounded-2xl font-black text-white text-xs tracking-[0.2em] shadow-2xl hover:shadow-3xl transform transition-all duration-300 ${pressed ? 'scale-95 brightness-90' : 'scale-100 hover:-translate-y-1'}`}
+                    style={{ backgroundColor: color.primary }}
                 >
                     <Send size={14} className="inline mr-3 -translate-y-0.5" />
                     {(config?.label || t.sendCommand).toUpperCase()}
@@ -610,7 +612,10 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                 )}
             </button>
 
-            <div className={`px-6 py-2 rounded-full text-xs font-black tracking-[0.2em] transition-all duration-500 ${isOn ? `bg-gradient-to-r ${color.gradient} text-white shadow-lg` : 'bg-slate-100 text-slate-400'}`}>
+            <div 
+                className={`px-6 py-2 rounded-full text-xs font-black tracking-[0.2em] transition-all duration-500 ${isOn ? 'text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}
+                style={isOn ? { backgroundColor: color.primary } : undefined}
+            >
                 {isOn ? t.on.toUpperCase() : t.off.toUpperCase()}
             </div>
             <p className="text-[10px] text-slate-400 mt-6 font-black font-mono tracking-tighter opacity-50 italic">
@@ -734,7 +739,8 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
                 />
                 <button
                     onClick={handlePublish}
-                    className={`w-full py-4 rounded-2xl font-black text-white text-xs tracking-[0.2em] shadow-2xl hover:shadow-3xl transform transition-all duration-300 bg-gradient-to-r ${color.gradient} hover:-translate-y-1 active:scale-95`}
+                    className="w-full py-4 rounded-2xl font-black text-white text-xs tracking-[0.2em] shadow-2xl hover:shadow-3xl transform transition-all duration-300 hover:-translate-y-1 active:scale-95"
+                    style={{ backgroundColor: color.primary }}
                 >
                     <Send size={14} className="inline mr-3 -translate-y-0.5" />
                     {t.publish.toUpperCase()}
