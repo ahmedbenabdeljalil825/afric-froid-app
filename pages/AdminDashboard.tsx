@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, UserRole, UserConfig, MqttConfig } from '../types';
-import { Plus, Search, Edit2, Trash2, CheckCircle, XCircle, Settings, X, RefreshCw } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, CheckCircle, XCircle, Settings, X, RefreshCw, Loader2 } from 'lucide-react';
 import { supabase } from '../services/supabase';
+import mqtt from 'mqtt';
+import { useToast } from '../components/ToastProvider';
+import { useConfirm } from '../components/ConfirmProvider';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,12 +33,15 @@ const AdminDashboard: React.FC = () => {
   });
   const [createCompanyId, setCreateCompanyId] = useState('');
   const [createPassword, setCreatePassword] = useState('');
+  const [editAuthPassword, setEditAuthPassword] = useState('');
+  const [mqttTestStatus, setMqttTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [mqttTestMessage, setMqttTestMessage] = useState('');
 
   const fetchUsers = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('*');
+      .select('id, company_id, full_name, role, is_active, config, mqtt_config, language, password');
 
     if (error) {
       console.error('Error fetching profiles:', error);
@@ -58,6 +66,20 @@ const AdminDashboard: React.FC = () => {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    // Prevent background page scrolling while the modal is open.
+    const previousOverflow = document.body.style.overflow;
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = previousOverflow || '';
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow || '';
+    };
+  }, [isModalOpen]);
+
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.companyId.toLowerCase().includes(searchQuery.toLowerCase())
@@ -66,6 +88,9 @@ const AdminDashboard: React.FC = () => {
   const openEditModal = (user: User) => {
     setEditingUser(user);
     setFormData({ ...user, isActive: user.isActive });
+    setEditAuthPassword('');
+    setMqttTestStatus('idle');
+    setMqttTestMessage('');
     setIsModalOpen(true);
   };
 
@@ -86,24 +111,135 @@ const AdminDashboard: React.FC = () => {
     });
     setCreateCompanyId('');
     setCreatePassword('');
+    setEditAuthPassword('');
+    setMqttTestStatus('idle');
+    setMqttTestMessage('');
     setIsModalOpen(true);
   };
+
+  const handleTestMqttConnection = () => {
+    const cfg = formData.mqttConfig;
+    const brokerUrl = cfg?.brokerUrl?.trim();
+
+    if (!brokerUrl) {
+      setMqttTestStatus('error');
+      setMqttTestMessage('Broker URL is required before testing.');
+      return;
+    }
+
+    setMqttTestStatus('testing');
+    setMqttTestMessage('Testing MQTT connection...');
+
+    const client = mqtt.connect(brokerUrl, {
+      username: cfg?.username?.trim() || undefined,
+      password: cfg?.password?.trim() || undefined,
+      connectTimeout: 10_000,
+      reconnectPeriod: 0,
+      protocolVersion: 4,
+      clean: true,
+      clientId: `af_test_${Math.random().toString(16).slice(2, 10)}`
+    });
+
+    let settled = false;
+    const finish = (status: 'success' | 'error', message: string) => {
+      if (settled) return;
+      settled = true;
+      setMqttTestStatus(status);
+      setMqttTestMessage(message);
+      clearTimeout(timeout);
+      try {
+        client.removeAllListeners();
+        client.end(true);
+      } catch {
+        // ignore cleanup errors
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      finish('error', 'Connection timed out after 10 seconds.');
+    }, 10_500);
+
+    client.on('connect', () => {
+      finish('success', 'Connected successfully. MQTT settings look valid.');
+    });
+
+    client.on('error', (err: Error) => {
+      finish('error', err?.message ? `Connection failed: ${err.message}` : 'Connection failed.');
+    });
+
+    client.on('close', () => {
+      if (!settled) {
+        finish('error', 'Connection closed before MQTT session was established.');
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (mqttTestStatus !== 'idle') {
+      setMqttTestStatus('idle');
+      setMqttTestMessage('');
+    }
+    // Reset test result when any MQTT input changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    formData.mqttConfig?.brokerUrl,
+    formData.mqttConfig?.username,
+    formData.mqttConfig?.password,
+    formData.mqttConfig?.topics?.telemetry,
+    formData.mqttConfig?.topics?.command
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingUser) {
+      const trimmedNewPassword = editAuthPassword.trim();
+      const trimmedCompanyId = (formData.companyId || '').trim();
+      const trimmedName = (formData.name || '').trim();
+
+      if (!trimmedCompanyId || !trimmedName) {
+        toast({ kind: 'error', title: 'Update failed', message: 'Company ID and full name are required.' });
+        return;
+      }
+
+      if (trimmedNewPassword && trimmedNewPassword.length < 6) {
+        toast({ kind: 'error', title: 'Update failed', message: 'Password must be at least 6 characters.' });
+        return;
+      }
+
+      const profilePatch: any = {
+        company_id: trimmedCompanyId,
+        full_name: trimmedName,
+        role: formData.role,
+        is_active: formData.isActive,
+        mqtt_config: formData.mqttConfig,
+      };
+
+      const companyIdChanged = trimmedCompanyId !== editingUser.companyId;
+      // Always prefer the Edge Function for admin edits so updates don't depend on client-side RLS.
+      const needsEdgeFunction = true;
+
+      // Always use Edge Function for admin edits so updates don't depend on client-side RLS.
+
       try {
         // Use Edge Function for update to handle password changes securely
+        const updatePayload: any = {
+          userId: editingUser.id,
+          companyId: trimmedCompanyId,
+          fullName: trimmedName,
+          role: formData.role,
+          isActive: formData.isActive,
+          mqttConfig: formData.mqttConfig,
+        };
+        if (trimmedNewPassword) updatePayload.password = trimmedNewPassword;
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+
         const { data, error: functionError } = await supabase.functions.invoke('update-user', {
           body: {
-            userId: editingUser.id,
-            companyId: formData.companyId,
-            password: formData.password, // This will now update the real Auth password
-            fullName: formData.name,
-            role: formData.role,
-            isActive: formData.isActive,
-            mqttConfig: formData.mqttConfig,
+            ...updatePayload,
           },
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
         });
 
         if (functionError) {
@@ -115,8 +251,40 @@ const AdminDashboard: React.FC = () => {
 
         fetchUsers();
         setIsModalOpen(false);
+        toast({ kind: 'success', title: 'Updated', message: 'User updated successfully.' });
       } catch (err: any) {
-        alert('Error updating user: ' + err.message);
+        console.error('Edge function update-user failed. Falling back to profile update.', err);
+        if (trimmedNewPassword) {
+          // Keep legacy profile password column in sync if admin entered a new value.
+          profilePatch.password = trimmedNewPassword;
+        }
+
+        const { data: fallbackRows, error: profileError } = await supabase
+          .from('profiles')
+          .update(profilePatch)
+          .eq('id', editingUser.id)
+          .select('id');
+
+        if (profileError) {
+          const edgeMsg = err?.message ? ` Edge Function: ${err.message}.` : '';
+          toast({ kind: 'error', title: 'Update failed', message: `Error updating user.${edgeMsg} Profile update failed: ${profileError.message}` });
+          return;
+        }
+        if (!fallbackRows || fallbackRows.length === 0) {
+          const edgeMsg = err?.message ? ` Edge Function: ${err.message}.` : '';
+          toast({ kind: 'error', title: 'Update blocked', message: `No profile row was updated.${edgeMsg} (RLS/admin permission issue).` });
+          return;
+        }
+
+        fetchUsers();
+        setIsModalOpen(false);
+        if (trimmedNewPassword) {
+          toast({ kind: 'info', title: 'Partial update', message: 'Profile updated, but Auth password update failed (Edge Function issue). Check function logs.' });
+        } else if (companyIdChanged) {
+          toast({ kind: 'info', title: 'Partial update', message: 'Profile updated, but company ID/auth email sync failed (Edge Function issue). Check function logs.' });
+        } else {
+          toast({ kind: 'info', title: 'Updated', message: 'User updated via profile fallback (Edge Function unavailable).' });
+        }
       }
     } else {
       // Create new user via Edge Function
@@ -132,27 +300,36 @@ const AdminDashboard: React.FC = () => {
         });
 
         if (fnError) {
-          alert('Error creating user: ' + fnError.message);
+          toast({ kind: 'error', title: 'Create failed', message: fnError.message });
         } else if (result?.error) {
-          alert('Error creating user: ' + result.error);
+          toast({ kind: 'error', title: 'Create failed', message: String(result.error) });
         } else {
           fetchUsers();
           setIsModalOpen(false);
+          toast({ kind: 'success', title: 'Created', message: 'User created successfully.' });
         }
       } catch (err: any) {
-        alert('Error creating user: ' + err.message);
+        toast({ kind: 'error', title: 'Create failed', message: err.message });
       }
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this profile? accessible data will be lost.')) return;
+    const ok = await confirm({
+      title: 'Delete user?',
+      message: 'This will delete the profile row. Accessible data may be lost.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      danger: true,
+    });
+    if (!ok) return;
 
     const { error } = await supabase.from('profiles').delete().eq('id', userId);
     if (!error) {
       fetchUsers();
+      toast({ kind: 'success', title: 'Deleted', message: 'User deleted.' });
     } else {
-      alert('Error deleting user: ' + error.message);
+      toast({ kind: 'error', title: 'Delete failed', message: error.message });
     }
   };
 
@@ -294,8 +471,8 @@ const AdminDashboard: React.FC = () => {
 
       {/* User Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-900">
                 {editingUser ? 'Edit User' : 'Create New User'}
@@ -305,7 +482,7 @@ const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto flex-1 overscroll-contain">
               <div className="space-y-4">
                 {/* Identification Section */}
                 <div className={`grid grid-cols-2 gap-4 p-4 rounded-xl border ${editingUser ? 'bg-slate-50 border-slate-200' : 'bg-blue-50 border-blue-100'}`}>
@@ -314,6 +491,7 @@ const AdminDashboard: React.FC = () => {
                     <input
                       required
                       type="text"
+                      autoComplete="off"
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-[#009fe3] outline-none"
                       placeholder="AF-XXXX"
                       value={editingUser ? formData.companyId : createCompanyId}
@@ -326,13 +504,15 @@ const AdminDashboard: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                     <input
-                      required
-                      type="text"
+                      required={!editingUser}
+                      type="password"
+                      autoComplete="new-password"
+                      name="user_auth_password"
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-[#009fe3] outline-none"
-                      placeholder="Min 6 characters"
-                      value={editingUser ? formData.password : createPassword}
+                      placeholder={editingUser ? 'Leave blank to keep current password' : 'Min 6 characters'}
+                      value={editingUser ? editAuthPassword : createPassword}
                       onChange={e => editingUser
-                        ? setFormData({ ...formData, password: e.target.value })
+                        ? setEditAuthPassword(e.target.value)
                         : setCreatePassword(e.target.value)
                       }
                     />
@@ -435,6 +615,8 @@ const AdminDashboard: React.FC = () => {
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Username (Optional)</label>
                       <input
                         type="text"
+                        autoComplete="off"
+                        name="mqtt_username"
                         className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none text-sm"
                         placeholder="MQTT username"
                         value={formData.mqttConfig?.username || ''}
@@ -448,6 +630,8 @@ const AdminDashboard: React.FC = () => {
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Password (Optional)</label>
                       <input
                         type="password"
+                        autoComplete="new-password"
+                        name="mqtt_password"
                         className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none text-sm"
                         placeholder="MQTT password"
                         value={formData.mqttConfig?.password || ''}
@@ -458,11 +642,31 @@ const AdminDashboard: React.FC = () => {
                       />
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleTestMqttConnection}
+                      disabled={mqttTestStatus === 'testing'}
+                      className="px-4 py-2 rounded-lg bg-[#009fe3] text-white text-sm font-semibold hover:bg-[#008ac4] disabled:opacity-70 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    >
+                      {mqttTestStatus === 'testing' && <Loader2 size={14} className="animate-spin" />}
+                      Test MQTT Connection
+                    </button>
+                    {mqttTestStatus !== 'idle' && (
+                      <p
+                        className={`text-xs font-medium ${
+                          mqttTestStatus === 'success' ? 'text-emerald-600' : mqttTestStatus === 'error' ? 'text-red-600' : 'text-slate-500'
+                        }`}
+                      >
+                        {mqttTestMessage}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-4 sticky bottom-0 bg-white border-t border-slate-100 shadow-[0_-8px_16px_-12px_rgba(15,23,42,0.35)]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}

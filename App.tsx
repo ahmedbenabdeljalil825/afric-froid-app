@@ -24,6 +24,8 @@ import { User, UserRole, UserConfig, MqttConfig } from './types';
 import { mqttService } from './services/mqttService';
 import { DEFAULT_USER_CONFIG } from './constants';
 import { supabase } from './services/supabase';
+import { ToastProvider } from './components/ToastProvider';
+import { ConfirmProvider } from './components/ConfirmProvider';
 
 const AppContent: React.FC<{ 
   currentUser: User | null, 
@@ -137,13 +139,20 @@ const App: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, company_id, full_name, role, is_active, mqtt_config, language')
         .eq('id', userId)
         .single();
 
       if (error) {
         console.error('Error fetching profile:', error);
       } else if (data) {
+        if (!data.is_active) {
+          // Hard-stop inactive accounts even if Auth login succeeds.
+          await supabase.auth.signOut();
+          setCurrentUser(null);
+          return;
+        }
+
         const user: User = {
           id: data.id,
           companyId: data.company_id,
@@ -203,14 +212,18 @@ const App: React.FC = () => {
   };
 
   return (
-    <HashRouter>
-      <AppContent 
-        currentUser={currentUser} 
-        loading={loading} 
-        handleLogout={handleLogout} 
-        handleUpdateUser={handleUpdateUser} 
-      />
-    </HashRouter>
+    <ToastProvider>
+      <ConfirmProvider>
+        <HashRouter>
+          <AppContent
+            currentUser={currentUser}
+            loading={loading}
+            handleLogout={handleLogout}
+            handleUpdateUser={handleUpdateUser}
+          />
+        </HashRouter>
+      </ConfirmProvider>
+    </ToastProvider>
   );
 };
 

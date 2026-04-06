@@ -1,26 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { User, PLCTelemetry, Widget } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Widget, ReadingWidgetType, WidgetCategory } from '../types';
 import { mqttService } from '../services/mqttService';
-import { Power, Thermometer, AlertTriangle, Save, RefreshCw, Sliders } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../services/supabase';
 import { WidgetRenderer } from '../components/WidgetRenderer';
+import { buildLineChartSeries, downsampleSeries } from '../utils/chartSeries';
+
+const MAX_POINTS_PER_CHART = 700;
+const isWideWidget = (widget: Widget): boolean => {
+  const cfg = (widget.config || {}) as any;
+  return cfg?.layoutWidth === 'wide' || cfg?.large === true;
+};
+const widgetSpanClass = (wide: boolean): string => (wide ? 'md:col-span-2 lg:col-span-4' : 'lg:col-span-2');
+
+function mapDbWidget(w: any): Widget {
+  return {
+    id: w.id,
+    userId: w.user_id,
+    name: w.name,
+    category: w.category as WidgetCategory,
+    widgetType: w.widget_type,
+    mqttTopic: w.mqtt_topic,
+    mqttAction: w.mqtt_action,
+    qos: w.qos,
+    retain: w.retain,
+    variableName: w.variable_name,
+    dataLabel: w.data_label,
+    config: w.config,
+    position: w.position,
+    isActive: w.is_active,
+    alarmEnabled: w.alarm_enabled,
+    alarmMin: w.alarm_min,
+    alarmMax: w.alarm_max,
+    historyInterval: w.history_interval ?? 10,
+  };
+}
 
 interface ClientControlsProps {
   user: User;
 }
 
 const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
-  const [telemetry, setTelemetry] = useState<PLCTelemetry | null>(null);
-  const [targetSetpoint, setTargetSetpoint] = useState<string>('');
-  const [loadingAction, setLoadingAction] = useState(false);
-  
   // Dynamic widgets state
   const [widgets, setWidgets] = useState<Widget[]>([]);
   const [liveData, setLiveData] = useState<Record<string, any>>({});
+  const [historyData, setHistoryData] = useState<Record<string, any[]>>({});
+  const [timeRanges, setTimeRanges] = useState<Record<string, string>>({});
   const [loadingWidgets, setLoadingWidgets] = useState(true);
-  
   const t = TRANSLATIONS[user.language];
+  const reloadLineChartsRef = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     let activeSubscriptions: (() => void)[] = [];
@@ -30,77 +58,37 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
         // Fetch Control Widgets
         const { data, error } = await supabase
           .from('widgets')
-          .select('*')
+          .select('id, user_id, name, category, widget_type, mqtt_topic, mqtt_action, qos, retain, variable_name, data_label, config, position, is_active, alarm_enabled, alarm_min, alarm_max, history_interval')
           .eq('user_id', user.id)
           .eq('is_active', true)
-          .eq('category', 'CONTROLLING')
+          .in('category', ['READING', 'CONTROLLING'])
           .order('position', { ascending: true });
 
         if (error) throw error;
 
-        const fetchedWidgets: Widget[] = (data || []).map((w: any) => ({
-          id: w.id,
-          userId: w.user_id,
-          name: w.name,
-          category: w.category,
-          widgetType: w.widget_type,
-          mqttTopic: w.mqtt_topic,
-          mqttAction: w.mqtt_action,
-          qos: w.qos,
-          retain: w.retain,
-          variableName: w.variable_name,
-          dataLabel: w.data_label,
-          config: w.config,
-          position: w.position,
-          isActive: w.is_active,
-          alarmEnabled: w.alarm_enabled,
-          alarmMin: w.alarm_min,
-          alarmMax: w.alarm_max
-        }));
+        const allMapped: Widget[] = (data || []).map(mapDbWidget);
+        mqttService.setMonitoredWidgets(allMapped);
 
+        const fetchedWidgets = allMapped.filter((w: Widget) => w.category === WidgetCategory.CONTROLLING);
         setWidgets(fetchedWidgets);
 
         // Pre-populate with last known data from cache
         const cachedState = mqttService.getCurrentState();
         let initialLiveData = {};
-        const telemetryTopic = user.mqttConfig?.topics.telemetry || 'telemetry';
 
         Object.keys(cachedState).forEach(topic => {
           const payload = cachedState[topic];
           initialLiveData = { ...initialLiveData, ...payload };
-          
-          if (topic === telemetryTopic) {
-            setTelemetry(payload);
-            if (payload.setpoint !== undefined) {
-                setTargetSetpoint(payload.setpoint.toString());
-            }
-          }
         });
         setLiveData(initialLiveData);
 
         // Collect all unique topics
         const uniqueTopics = new Set<string>();
-        fetchedWidgets.forEach(w => uniqueTopics.add(w.mqttTopic));
-
-        // Always add telemetry for hardcoded controls
-        uniqueTopics.add(telemetryTopic);
+        fetchedWidgets.forEach((w: Widget) => uniqueTopics.add(w.mqttTopic));
 
         uniqueTopics.forEach(topic => {
           const unsub = mqttService.subscribe((data: any) => {
-            // Update live data for custom widgets
             setLiveData(prev => ({ ...prev, ...data }));
-
-            // Update telemetry state for hardcoded components if this is the telemetry topic
-            if (topic === telemetryTopic) {
-              setTelemetry(data);
-              // Auto-set the setpoint input the first time we see it
-              setTargetSetpoint(prev => {
-                if (prev === '' && data.setpoint !== undefined) {
-                  return data.setpoint.toString();
-                }
-                return prev;
-              });
-            }
           }, topic);
           activeSubscriptions.push(unsub);
         });
@@ -119,25 +107,93 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
     };
   }, [user.id, user.mqttConfig?.topics.telemetry]);
 
-  const handleSetpointChange = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!targetSetpoint || !telemetry) return;
+  // --- Persistence & History Logic ---
 
-    setLoadingAction(true);
-    const topic = user.mqttConfig?.topics.telemetry || 'telemetry';
+  // Helper to fetch history from Supabase
+  const fetchWidgetHistory = async (widget: Widget, rangeHours: number) => {
+    try {
+      const startTime = new Date(Date.now() - rangeHours * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('telemetry_readings')
+        .select('value, created_at')
+        .eq('widget_id', widget.id)
+        .eq('variable_name', widget.variableName)
+        .gte('created_at', startTime)
+        .order('created_at', { ascending: true });
 
-    setTimeout(() => {
-      mqttService.publishVariableUpdate(topic, 'setpoint', Number(targetSetpoint));
-      setLoadingAction(false);
-    }, 800);
+      if (error) throw error;
+
+      const pts = (data || []).map((row: any) => ({
+        timestamp: new Date(row.created_at).getTime(),
+        value: row.value,
+      }));
+      return downsampleSeries(pts, MAX_POINTS_PER_CHART);
+    } catch (err) {
+      console.error(`Error fetching history for ${widget.name}:`, err);
+      return [];
+    }
   };
 
-  const togglePower = () => {
-    if (!user.config?.allowPowerControl || !telemetry) return;
-    const newState = telemetry.status === 'RUNNING' ? 'OFF' : 'ON';
-    const topic = user.mqttConfig?.topics.telemetry || 'telemetry';
-    mqttService.publishVariableUpdate(topic, 'status', newState);
+  const handleRangeChange = (widgetId: string, range: string) => {
+    setTimeRanges((prev) => ({ ...prev, [widgetId]: range }));
   };
+
+  useEffect(() => {
+    if (widgets.length === 0) {
+      reloadLineChartsRef.current = null;
+      return;
+    }
+    let cancelled = false;
+
+    const load = async () => {
+      for (const w of widgets) {
+        if (w.widgetType !== ReadingWidgetType.LINE_CHART) continue;
+        const range = timeRanges[w.id] || '1';
+        const hours = parseInt(range, 10) || 1;
+        const history = await fetchWidgetHistory(w, hours);
+        if (!cancelled) {
+          setHistoryData((prev) => ({ ...prev, [w.id]: history }));
+        }
+      }
+    };
+
+    reloadLineChartsRef.current = load;
+    load();
+    const id = setInterval(load, 45_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [widgets, timeRanges]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleRefetch = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        debounce = null;
+        void reloadLineChartsRef.current?.();
+      }, 350);
+    };
+
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) scheduleRefetch();
+    };
+
+    document.addEventListener('visibilitychange', scheduleRefetch);
+    window.addEventListener('focus', scheduleRefetch);
+    window.addEventListener('pageshow', onPageShow as EventListener);
+
+    return () => {
+      if (debounce) clearTimeout(debounce);
+      document.removeEventListener('visibilitychange', scheduleRefetch);
+      window.removeEventListener('focus', scheduleRefetch);
+      window.removeEventListener('pageshow', onPageShow as EventListener);
+    };
+  }, []);
 
   if (loadingWidgets) {
     return (
@@ -160,14 +216,29 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr mb-12">
           {widgets.map((widget, index) => {
              const val = liveData[widget.variableName] !== undefined ? liveData[widget.variableName] : undefined;
+             const isLarge = isWideWidget(widget);
              
+             // Merge history and live data for charts
+             const range = timeRanges[widget.id] || '1';
+             const history = historyData[widget.id] || [];
+             const hours = parseInt(range, 10) || 1;
+             const lineSeries =
+               widget.widgetType === ReadingWidgetType.LINE_CHART
+                 ? buildLineChartSeries(history, val, hours)
+                 : undefined;
+
              return (
-               <div key={widget.id}>
-               <WidgetRenderer
+               <div key={widget.id} className={widgetSpanClass(isLarge)}>
+                 <WidgetRenderer
                    widget={widget}
                    language={user.language}
                    colorIndex={index}
                    currentData={val}
+                   historyData={
+                     widget.widgetType === ReadingWidgetType.LINE_CHART ? lineSeries : undefined
+                   }
+                   timeRange={range}
+                   onRangeChange={(r: string) => handleRangeChange(widget.id, r)}
                    isPreview={false}
                  />
                </div>
@@ -175,123 +246,6 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
           })}
         </div>
       )}
-
-      {/* Hardcoded Controls */}
-      <h3 className="text-xl font-bold text-slate-800 border-b border-slate-100 pb-2 mt-8">System Overrides</h3>
-      
-      {!telemetry && (
-        <div className="bg-amber-50 text-amber-800 p-4 rounded-xl border border-amber-200 flex items-center gap-3">
-          <AlertTriangle size={20} />
-          <p className="text-sm font-medium">Waiting for direct telemetry from the unit to enable system overrides...</p>
-        </div>
-      )}
-
-      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-8 ${!telemetry ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
-        {/* Setpoint Control Card */}
-        {user.config?.allowSetpointControl && (
-          <div className="bg-white rounded-[30px] p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-shadow duration-300 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-50 rounded-bl-[100px] -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
-
-            <div className="relative z-10">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="p-4 bg-cyan-50 rounded-2xl ring-4 ring-cyan-50/50">
-                  <Thermometer className="text-[#009fe3]" size={32} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">Temperature Setpoint</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Current Target</span>
-                    <span className="px-2 py-0.5 bg-slate-100 rounded-md text-slate-700 font-bold text-xs">{telemetry?.setpoint ?? '--'}°C</span>
-                  </div>
-                </div>
-              </div>
-
-              <form onSubmit={handleSetpointChange} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-700 ml-1">
-                    New Target Temperature (°C)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={targetSetpoint}
-                      onChange={(e) => setTargetSetpoint(e.target.value)}
-                      placeholder="e.g. 4.0"
-                      className="w-full px-6 py-5 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-[#009fe3] focus:bg-white focus:ring-4 focus:ring-[#009fe3]/10 outline-none transition-all text-2xl font-bold text-slate-900 placeholder:text-slate-300"
-                    />
-                    <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <Sliders className="text-slate-300" size={24} />
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loadingAction || !telemetry}
-                  className="w-full bg-gradient-to-r from-[#002060] to-[#009fe3] hover:from-[#003080] hover:to-[#00b0f0] text-white py-5 rounded-2xl font-bold text-lg shadow-xl shadow-blue-900/10 hover:shadow-blue-900/30 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  {loadingAction ? <RefreshCw className="animate-spin" size={24} /> : <Save size={24} />}
-                  <span>{t.save}</span>
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* System Power Card */}
-        <div className="bg-white rounded-[30px] p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-shadow duration-300 relative overflow-hidden group">
-          <div className={`absolute top-0 right-0 w-32 h-32 rounded-bl-[100px] -mr-8 -mt-8 transition-colors duration-500 ${telemetry?.status === 'RUNNING' ? 'bg-emerald-50' : 'bg-slate-100'}`}></div>
-
-          <div className="relative z-10 flex flex-col h-full justify-between">
-            <div>
-              <div className="flex items-center gap-4 mb-8">
-                <div className={`p-4 rounded-2xl ring-4 transition-colors duration-500 ${telemetry?.status === 'RUNNING' ? 'bg-emerald-50 text-emerald-600 ring-emerald-50/50' : 'bg-slate-100 text-slate-500 ring-slate-100/50'
-                  }`}>
-                  <Power size={32} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">System Power</h3>
-                  <p className="text-slate-500 text-sm font-medium">Main Contactor Status</p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 mb-8">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Operational State</span>
-                  <span className={`text-xl font-black ${telemetry?.status === 'RUNNING' ? 'text-emerald-600' : 'text-slate-500'
-                    }`}>
-                    {telemetry?.status || 'UNKNOWN'}
-                  </span>
-                </div>
-                <div className={`w-3 h-3 rounded-full ${telemetry?.status === 'RUNNING' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'
-                  }`}></div>
-              </div>
-            </div>
-
-            {user.config?.allowPowerControl ? (
-              <button
-                onClick={togglePower}
-                disabled={!telemetry}
-                className={`w-full py-5 rounded-2xl font-bold text-lg text-white transition-all shadow-xl hover:-translate-y-1 active:translate-y-0 disabled:opacity-70 disabled:hover:translate-y-0 ${telemetry?.status === 'RUNNING'
-                  ? 'bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 shadow-red-500/20'
-                  : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 shadow-emerald-500/20'
-                  }`}
-              >
-                {telemetry?.status === 'RUNNING' ? 'STOP SYSTEM' : 'START SYSTEM'}
-              </button>
-            ) : (
-              <div className="flex items-start gap-4 p-5 bg-amber-50 text-amber-800 rounded-2xl border border-amber-100">
-                <AlertTriangle size={24} className="shrink-0" />
-                <div>
-                  <p className="font-bold mb-1">Access Restricted</p>
-                  <p className="text-sm opacity-90">Power control is currently disabled by your administrator.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

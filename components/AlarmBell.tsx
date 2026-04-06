@@ -113,7 +113,7 @@ export const AlarmBell: React.FC<AlarmBellProps> = ({ user }) => {
     const fetchActiveAlarms = async () => {
         const { data, error } = await supabase
             .from('alarms')
-            .select('*')
+            .select('id, user_id, widget_id, variable_name, trigger_value, threshold_value, alarm_type, severity, status, created_at')
             .eq('user_id', user.id)
             .eq('status', 'ACTIVE')
             .order('created_at', { ascending: false });

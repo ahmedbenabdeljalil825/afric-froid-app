@@ -66,6 +66,9 @@ export interface Widget {
   alarmEnabled?: boolean;
   alarmMin?: number;
   alarmMax?: number;
+
+  // Telemetry Configuration
+  historyInterval?: number; // Target flux interval in seconds (default 10)
 }
 
 export interface Alarm {
@@ -90,6 +93,8 @@ export type WidgetConfig =
   | ButtonConfig
   | MultiStateConfig
   | LogConfig
+  | ComboBoxConfig
+  | RadioButtonsConfig
   | Record<string, any>;
 
 export interface GaugeConfig {
@@ -102,8 +107,13 @@ export interface GaugeConfig {
 export interface ChartConfig {
   timeWindow: number; // in minutes
   showPoints: boolean;
+  layoutWidth?: 'normal' | 'wide';
   yMin?: number;
   yMax?: number;
+  thresholdWarning?: number;
+  thresholdCritical?: number;
+  unit?: string;
+  tickInterval?: number;
 }
 
 export interface ButtonConfig {
@@ -120,6 +130,15 @@ export interface LogConfig {
   maxEntries: number;
   fontSize: number;
   showTimestamp: boolean;
+  layoutWidth?: 'normal' | 'wide';
+}
+
+export interface ComboBoxConfig {
+  options: { label: string; value: string }[];
+}
+
+export interface RadioButtonsConfig {
+  options: { label: string; value: string }[];
 }
 
 // Legacy type - kept for backward compatibility during migration
@@ -293,6 +312,8 @@ export interface Translation {
   limit: string;
   refresh: string;
   clearHistory: string;
+  clearHistoryError: string;
+  noHistoricalAlarmsToClear: string;
   systemRunningSmoothly: string;
   noAlarmHistory: string;
   vsLastHour: string;
@@ -313,4 +334,44 @@ export interface Translation {
   configuration: string;
   live: string;
   unsupportedWidget: string;
+  chartDataFromDatabase: string;
+  chartSavedEverySeconds: string;
+  chartRange1h: string;
+  chartRange6h: string;
+  chartRange12h: string;
+  chartRange24h: string;
+  adminDatabaseSampleInterval: string;
+  adminTelemetrySamplingTitle: string;
+  adminTelemetrySamplingBody: string;
+  adminDatabaseSampleSelectTitle: string;
+  adminSample10s: string;
+  adminSample30s: string;
+  adminSample1m: string;
+  adminSample2m: string;
+  adminSample5m: string;
+  adminSample10m: string;
+  adminSample15m: string;
+  adminSample30m: string;
+  adminSample1h: string;
+  adminChartTimeRangeNote: string;
+  adminChartYMinOptional: string;
+  adminChartYMaxOptional: string;
+  adminChartYMinTitle: string;
+  adminChartYMaxTitle: string;
+  adminPlaceholderAuto: string;
+  adminShowPoints: string;
+  widgetConfigTopic: string;
+  widgetConfigVariable: string;
+  widgetConfigAction: string;
+  adminWidgetConfiguration: string;
+  downloadWidgetData: string;
+  downloadWidgetDataTooltip: string;
+  exportTelemetryEmpty: string;
+  exportTelemetryError: string;
+  exportTelemetryDownloading: string;
+  exportTelemetryDownloaded: string;
+  exportCsvTimestamp: string;
+  exportCsvValue: string;
+  exportCsvVariable: string;
+  exportCsvUnit: string;
 }

@@ -1,14 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { User, UserRole, MqttConfig, Widget, WidgetCategory, ReadingWidgetType, ControllingWidgetType, MqttQoS } from '../types';
+import { User, UserRole, MqttConfig, Widget, WidgetCategory, ReadingWidgetType, ControllingWidgetType, MqttQoS, Language } from '../types';
+import { TRANSLATIONS } from '../constants';
 import { WidgetRenderer } from '../components/WidgetRenderer';
 import { ChevronLeft, Save, Monitor, MousePointer2, AlertTriangle, Plus, Trash2, GripVertical, X, Settings as SettingsIcon } from 'lucide-react';
 import InfoTooltip from '../components/InfoTooltip';
+import { useToast } from '../components/ToastProvider';
+import { useConfirm } from '../components/ConfirmProvider';
+
+const supportsWideLayout = (widgetType?: string): boolean =>
+    widgetType === ReadingWidgetType.LINE_CHART ||
+    widgetType === ReadingWidgetType.BAR_CHART ||
+    widgetType === ReadingWidgetType.TEXT_LOG;
+
+const isWideWidget = (widget: Widget): boolean => {
+    const cfg = (widget.config || {}) as any;
+    return cfg?.layoutWidth === 'wide' || cfg?.large === true;
+};
 
 const AdminUserDesigner: React.FC = () => {
     const { userId } = useParams<{ userId: string }>();
     const navigate = useNavigate();
+    const { toast } = useToast();
+    const { confirm } = useConfirm();
     const [user, setUser] = useState<User | null>(null);
     const [widgets, setWidgets] = useState<Widget[]>([]);
     const [loading, setLoading] = useState(true);
@@ -18,6 +33,9 @@ const AdminUserDesigner: React.FC = () => {
     const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
 
     // Widget form state
+    const designerLang: Language = user?.language === 'en' ? 'en' : 'fr';
+    const at = TRANSLATIONS[designerLang];
+
     const [widgetForm, setWidgetForm] = useState<Partial<Widget>>({
         name: '',
         category: WidgetCategory.READING,
@@ -32,7 +50,8 @@ const AdminUserDesigner: React.FC = () => {
         isActive: true,
         alarmEnabled: false,
         alarmMin: undefined,
-        alarmMax: undefined
+        alarmMax: undefined,
+        historyInterval: 10
     });
 
     useEffect(() => {
@@ -47,7 +66,7 @@ const AdminUserDesigner: React.FC = () => {
         setError(null);
         const { data, error: fetchError } = await supabase
             .from('profiles')
-            .select('*')
+            .select('id, company_id, full_name, role, is_active, config, mqtt_config, language')
             .eq('id', id)
             .single();
 
@@ -72,7 +91,7 @@ const AdminUserDesigner: React.FC = () => {
     const fetchWidgets = async (userId: string) => {
         const { data, error: fetchError } = await supabase
             .from('widgets')
-            .select('*')
+            .select('id, user_id, name, category, widget_type, mqtt_topic, mqtt_action, qos, retain, variable_name, data_label, config, position, is_active, alarm_enabled, alarm_min, alarm_max, history_interval')
             .eq('user_id', userId)
             .order('position');
 
@@ -97,7 +116,8 @@ const AdminUserDesigner: React.FC = () => {
                 isActive: w.is_active,
                 alarmEnabled: w.alarm_enabled,
                 alarmMin: w.alarm_min,
-                alarmMax: w.alarm_max
+                alarmMax: w.alarm_max,
+                historyInterval: w.history_interval
             })));
         }
     };
@@ -122,7 +142,8 @@ const AdminUserDesigner: React.FC = () => {
                 isActive: true,
                 alarmEnabled: false,
                 alarmMin: undefined,
-                alarmMax: undefined
+                alarmMax: undefined,
+                historyInterval: 10
             });
         }
         setIsWidgetModalOpen(true);
@@ -131,6 +152,7 @@ const AdminUserDesigner: React.FC = () => {
     const handleSaveWidget = async () => {
         if (!user || !widgetForm.name || !widgetForm.mqttTopic || !widgetForm.variableName) {
             setError('Please fill all required fields');
+            toast({ kind: 'error', title: 'Missing fields', message: 'Please fill all required fields.' });
             return;
         }
 
@@ -156,7 +178,8 @@ const AdminUserDesigner: React.FC = () => {
                         is_active: widgetForm.isActive,
                         alarm_enabled: widgetForm.alarmEnabled,
                         alarm_min: widgetForm.alarmMin,
-                        alarm_max: widgetForm.alarmMax
+                        alarm_max: widgetForm.alarmMax,
+                        history_interval: widgetForm.historyInterval || 10
                     })
                     .eq('id', editingWidget.id);
 
@@ -181,7 +204,8 @@ const AdminUserDesigner: React.FC = () => {
                         is_active: widgetForm.isActive ?? true,
                         alarm_enabled: widgetForm.alarmEnabled ?? false,
                         alarm_min: widgetForm.alarmMin,
-                        alarm_max: widgetForm.alarmMax
+                        alarm_max: widgetForm.alarmMax,
+                        history_interval: widgetForm.historyInterval || 10
                     });
 
                 if (insertError) throw insertError;
@@ -189,16 +213,25 @@ const AdminUserDesigner: React.FC = () => {
 
             await fetchWidgets(user.id);
             setIsWidgetModalOpen(false);
+            toast({ kind: 'success', title: 'Saved', message: editingWidget ? 'Widget updated.' : 'Widget created.' });
         } catch (err: any) {
             console.error('Error saving widget:', err);
             setError('Failed to save widget: ' + err.message);
+            toast({ kind: 'error', title: 'Save failed', message: err.message });
         } finally {
             setSaving(false);
         }
     };
 
     const handleDeleteWidget = async (widgetId: string) => {
-        if (!confirm('Are you sure you want to delete this widget?')) return;
+        const ok = await confirm({
+            title: 'Delete widget?',
+            message: 'This will permanently delete the widget.',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            danger: true,
+        });
+        if (!ok) return;
 
         setSaving(true);
         const { error: deleteError } = await supabase
@@ -208,8 +241,10 @@ const AdminUserDesigner: React.FC = () => {
 
         if (deleteError) {
             setError('Failed to delete widget');
+            toast({ kind: 'error', title: 'Delete failed', message: deleteError.message });
         } else {
             await fetchWidgets(user!.id);
+            toast({ kind: 'success', title: 'Deleted', message: 'Widget deleted.' });
         }
         setSaving(false);
     };
@@ -396,7 +431,7 @@ const AdminUserDesigner: React.FC = () => {
                                         </h2>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {widgets.filter(w => w.isActive && w.category === WidgetCategory.READING).map((w, i) => (
-                                                <div key={w.id} className="min-h-[240px]">
+                                                <div key={w.id} className={`min-h-[240px] ${isWideWidget(w) ? 'md:col-span-2' : ''}`}>
                                                     <WidgetRenderer widget={w} language={user.language ?? 'fr'} colorIndex={i} isPreview={true} />
                                                 </div>
                                             ))}
@@ -414,7 +449,7 @@ const AdminUserDesigner: React.FC = () => {
                                         </h2>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {widgets.filter(w => w.isActive && w.category === WidgetCategory.CONTROLLING).map((w, i) => (
-                                                <div key={w.id} className="min-h-[240px]">
+                                                <div key={w.id} className={`min-h-[240px] ${supportsWideLayout(String(w.widgetType)) && isWideWidget(w) ? 'md:col-span-2' : ''}`}>
                                                     <WidgetRenderer widget={w} language={user.language ?? 'fr'} colorIndex={i + 2} isPreview={true} />
                                                 </div>
                                             ))}
@@ -600,11 +635,42 @@ const AdminUserDesigner: React.FC = () => {
                                             </label>
                                         </div>
                                     </div>
+
+                                    <div>
+                                        <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                                            {at.adminDatabaseSampleInterval}
+                                            <InfoTooltip
+                                                title={at.adminTelemetrySamplingTitle}
+                                                content={at.adminTelemetrySamplingBody}
+                                            />
+                                        </label>
+                                        <select
+                                            title={at.adminDatabaseSampleSelectTitle}
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none text-sm bg-white"
+                                            value={String(widgetForm.historyInterval ?? 10)}
+                                            onChange={(e) =>
+                                                setWidgetForm({
+                                                    ...widgetForm,
+                                                    historyInterval: Math.max(5, parseInt(e.target.value, 10) || 10),
+                                                })
+                                            }
+                                        >
+                                            <option value="10">{at.adminSample10s}</option>
+                                            <option value="30">{at.adminSample30s}</option>
+                                            <option value="60">{at.adminSample1m}</option>
+                                            <option value="120">{at.adminSample2m}</option>
+                                            <option value="300">{at.adminSample5m}</option>
+                                            <option value="600">{at.adminSample10m}</option>
+                                            <option value="900">{at.adminSample15m}</option>
+                                            <option value="1800">{at.adminSample30m}</option>
+                                            <option value="3600">{at.adminSample1h}</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="border-t border-slate-100 pt-6">
-                                <h4 className="text-sm font-black text-slate-900 mb-4">Widget Configuration</h4>
+                                <h4 className="text-sm font-black text-slate-900 mb-4">{at.adminWidgetConfiguration}</h4>
                                 <div className="space-y-4">
                                     {/* Gauge / Slider / Progress Config */}
                                     {(widgetForm.widgetType === ReadingWidgetType.GAUGE ||
@@ -652,15 +718,45 @@ const AdminUserDesigner: React.FC = () => {
                                     {(widgetForm.widgetType === ReadingWidgetType.LINE_CHART ||
                                         widgetForm.widgetType === ReadingWidgetType.BAR_CHART) && (
                                             <div className="grid grid-cols-2 gap-4">
+                                                <div className="col-span-2 text-[11px] text-slate-500 font-medium">
+                                                    {at.adminChartTimeRangeNote}
+                                                </div>
                                                 <div>
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">Time Window (mins)</label>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">{at.adminChartYMinOptional}</label>
                                                     <input
                                                         type="number"
-                                                        title="Time window in minutes"
-                                                        placeholder="30"
+                                                        title={at.adminChartYMinTitle}
+                                                        placeholder={at.adminPlaceholderAuto}
                                                         className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm"
-                                                        value={(widgetForm.config as any)?.timeWindow ?? 30}
-                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), timeWindow: parseInt(e.target.value) } })}
+                                                        value={(widgetForm.config as any)?.yMin ?? ''}
+                                                        onChange={(e) =>
+                                                            setWidgetForm({
+                                                                ...widgetForm,
+                                                                config: {
+                                                                    ...(widgetForm.config as any),
+                                                                    yMin: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                                                                },
+                                                            })
+                                                        }
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">{at.adminChartYMaxOptional}</label>
+                                                    <input
+                                                        type="number"
+                                                        title={at.adminChartYMaxTitle}
+                                                        placeholder={at.adminPlaceholderAuto}
+                                                        className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm"
+                                                        value={(widgetForm.config as any)?.yMax ?? ''}
+                                                        onChange={(e) =>
+                                                            setWidgetForm({
+                                                                ...widgetForm,
+                                                                config: {
+                                                                    ...(widgetForm.config as any),
+                                                                    yMax: e.target.value === '' ? undefined : parseFloat(e.target.value),
+                                                                },
+                                                            })
+                                                        }
                                                     />
                                                 </div>
                                                 <div className="flex items-end pb-2">
@@ -671,8 +767,28 @@ const AdminUserDesigner: React.FC = () => {
                                                             onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), showPoints: e.target.checked } })}
                                                             className="w-4 h-4 rounded text-frost-600 border-slate-300"
                                                         />
-                                                        <span className="text-sm font-medium text-slate-700">Show Points</span>
+                                                        <span className="text-sm font-medium text-slate-700">{at.adminShowPoints}</span>
                                                     </label>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">Widget Width</label>
+                                                    <select
+                                                        title="Chart widget width"
+                                                        className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm"
+                                                        value={(widgetForm.config as any)?.layoutWidth ?? 'normal'}
+                                                        onChange={(e) =>
+                                                            setWidgetForm({
+                                                                ...widgetForm,
+                                                                config: {
+                                                                    ...(widgetForm.config as any),
+                                                                    layoutWidth: e.target.value as 'normal' | 'wide',
+                                                                },
+                                                            })
+                                                        }
+                                                    >
+                                                        <option value="normal">Normal</option>
+                                                        <option value="wide">Wide (better chart scale)</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                         )}
@@ -729,6 +845,26 @@ const AdminUserDesigner: React.FC = () => {
                                                     value={(widgetForm.config as any)?.fontSize ?? 12}
                                                     onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), fontSize: parseInt(e.target.value) } })}
                                                 />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">Widget Width</label>
+                                                <select
+                                                    title="Log widget width"
+                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm"
+                                                    value={(widgetForm.config as any)?.layoutWidth ?? 'normal'}
+                                                    onChange={(e) =>
+                                                        setWidgetForm({
+                                                            ...widgetForm,
+                                                            config: {
+                                                                ...(widgetForm.config as any),
+                                                                layoutWidth: e.target.value as 'normal' | 'wide',
+                                                            },
+                                                        })
+                                                    }
+                                                >
+                                                    <option value="normal">Normal</option>
+                                                    <option value="wide">Wide</option>
+                                                </select>
                                             </div>
                                         </div>
                                     )}

@@ -12,6 +12,7 @@ export const BrokerStatus: React.FC<BrokerStatusProps> = ({ user }) => {
     const [status, setStatus] = useState(mqttService.status);
     const [lastUpdate, setLastUpdate] = useState<number | null>(mqttService.getLastUpdate());
     const [timeAgo, setTimeAgo] = useState<string>('');
+    const [lastError, setLastError] = useState<string | null>(mqttService.getLastError());
     const t = TRANSLATIONS[user.language];
 
     const formatTimeAgo = (timestamp: number | null) => {
@@ -28,12 +29,14 @@ export const BrokerStatus: React.FC<BrokerStatusProps> = ({ user }) => {
     useEffect(() => {
         const unsubscribe = mqttService.onStatusChange((newStatus) => {
             setStatus(newStatus);
+            setLastError(mqttService.getLastError());
         });
 
         // Polling for timestamp updates and time-ago string refresh
         const interval = setInterval(() => {
             const latest = mqttService.getLastUpdate();
             setLastUpdate(latest);
+            setLastError(mqttService.getLastError());
             if (latest) {
                 setTimeAgo(formatTimeAgo(latest));
             }
@@ -72,7 +75,7 @@ export const BrokerStatus: React.FC<BrokerStatusProps> = ({ user }) => {
                     bg: 'bg-red-500/10',
                     border: 'border-red-500/20',
                     icon: <AlertCircle size={14} />,
-                    subLabel: null
+                    subLabel: lastError ? lastError : null
                 };
             default:
                 // Show blue/gray 'Offline Mode' if using cached data

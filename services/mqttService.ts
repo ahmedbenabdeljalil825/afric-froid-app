@@ -13,12 +13,47 @@ class MQTTService {
     private topicState: Record<string, any> = {};
     private topicTimestamps: Record<string, number> = {};
     private monitoredWidgets: Widget[] = [];
+    private allWidgets: Widget[] = [];
     private activeAlarmWidgets: Set<string> = new Set();
+    private telemetryBuffer: Array<{ widget_id: string; variable_name: string; value: number; unit?: string; created_at: string }> = [];
+    private lastStoredTimestamps: Map<string, number> = new Map();
+    private flushTimer: ReturnType<typeof setInterval> | null = null;
+    private readonly FLUSH_INTERVAL = 10000; // 10 seconds
     private readonly STORAGE_KEY = 'af_mqtt_statev2';
     public status: 'connected' | 'disconnected' | 'connecting' | 'error' = 'disconnected';
+    private lastErrorMessage: string | null = null;
+
+    /** Background tabs throttle timers — MQTT keepalive pings stop → false “offline”. 0 = no client pings (broker must allow). */
+    private readonly MQTT_KEEPALIVE_SEC = 0;
+
+    private offlineUiTimer: ReturnType<typeof setTimeout> | null = null;
+    private readonly OFFLINE_UI_DEBOUNCE_MS = 12_000;
+    private visibilityUiBound = false;
+    private telemetryLifecycleBound = false;
 
     constructor() {
         this.loadStateFromStorage();
+    }
+
+    /**
+     * Best-effort flush when the tab is backgrounded/closed.
+     * Browsers heavily throttle timers + can drop WebSocket traffic in background tabs,
+     * so we proactively flush any buffered samples on lifecycle events.
+     */
+    private bindTelemetryFlushLifecycle() {
+        if (this.telemetryLifecycleBound || typeof window === 'undefined' || typeof document === 'undefined') return;
+        this.telemetryLifecycleBound = true;
+
+        const flush = () => {
+            // Don't block UI; this is best-effort.
+            void this.flushTelemetryBuffer();
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') flush();
+        });
+        window.addEventListener('pagehide', flush);
+        window.addEventListener('beforeunload', flush);
     }
 
     private loadStateFromStorage() {
@@ -57,22 +92,33 @@ class MQTTService {
         return Math.max(...times);
     }
 
+    public getLastError() {
+        return this.lastErrorMessage;
+    }
+
     connect(config: MqttConfig) {
         if (this.client) {
-            this.client.end();
+            try {
+                this.client.removeAllListeners();
+            } catch {
+                /* ignore */
+            }
+            this.client.end(true);
+            this.client = null;
         }
 
         this.updateStatus('connecting');
+        this.lastErrorMessage = null;
         this.config = config;
         // console.log('Connecting to MQTT Broker:', config.brokerUrl);
 
         const options: mqtt.IClientOptions = {
-            keepalive: 60,
-            clientId: 'webapp_' + Math.random().toString(16).substr(2, 8),
+            keepalive: this.MQTT_KEEPALIVE_SEC,
+            clientId: this.getStableClientId(),
             protocolId: 'MQTT',
             protocolVersion: 4,
             clean: true,
-            reconnectPeriod: 1000,
+            reconnectPeriod: 2000,
             connectTimeout: 30 * 1000,
         };
 
@@ -83,23 +129,48 @@ class MQTTService {
 
         this.client.on('connect', () => {
             console.log(`[MQTT] Connected successfully to ${config.brokerUrl}`);
+            this.lastErrorMessage = null;
+            this.clearOfflineUiDebounce();
             this.updateStatus('connected');
-            this.subscribeToInitialTopics();
+            this.resubscribeAllTopics();
         });
+
+        this.bindVisibilityForStatusSync();
 
         this.client.on('error', (err: Error) => {
             console.error('[MQTT] Connection Error:', err);
+            this.clearOfflineUiDebounce();
+            this.lastErrorMessage = err?.message || 'Unknown MQTT error';
             this.updateStatus('error');
+
+            const msg = (err?.message || '').toLowerCase();
+            const authError =
+                msg.includes('not authorized') ||
+                msg.includes('bad username') ||
+                msg.includes('bad user name') ||
+                msg.includes('authentication');
+
+            if (authError && this.client) {
+                // Avoid endless reconnect loops when credentials are invalid/missing.
+                this.client.options.reconnectPeriod = 0;
+                this.client.end(true);
+                this.client = null;
+            }
         });
 
         this.client.on('offline', () => {
             console.warn('[MQTT] Client went offline');
-            this.updateStatus('disconnected');
+            // In background tabs the client often flips offline when timers/WebSocket are throttled — don’t flash the UI.
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+                return;
+            }
+            this.scheduleDisconnectedUiDebounced();
         });
 
         this.client.on('reconnect', () => {
+            // Do not set status to 'connecting' here — brief tab switches trigger this often and flash the UI.
+            // Status is already 'disconnected' from 'offline'; 'connect' will restore 'connected'.
             console.log(`[MQTT] Attempting to reconnect to ${config.brokerUrl}...`);
-            this.updateStatus('connecting');
         });
 
         this.client.on('close', () => {
@@ -115,13 +186,70 @@ class MQTTService {
         });
     }
 
-    private subscribeToInitialTopics() {
+    private onVisibilityForStatusSync = () => {
+        if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+        this.clearOfflineUiDebounce();
+        if (this.client) {
+            this.updateStatus(this.client.connected ? 'connected' : 'disconnected');
+        }
+    };
+
+    private bindVisibilityForStatusSync() {
+        if (this.visibilityUiBound || typeof document === 'undefined') return;
+        document.addEventListener('visibilitychange', this.onVisibilityForStatusSync);
+        this.visibilityUiBound = true;
+    }
+
+    private unbindVisibilityForStatusSync() {
+        if (!this.visibilityUiBound || typeof document === 'undefined') return;
+        document.removeEventListener('visibilitychange', this.onVisibilityForStatusSync);
+        this.visibilityUiBound = false;
+    }
+
+    private clearOfflineUiDebounce() {
+        if (this.offlineUiTimer) {
+            clearTimeout(this.offlineUiTimer);
+            this.offlineUiTimer = null;
+        }
+    }
+
+    private scheduleDisconnectedUiDebounced() {
+        this.clearOfflineUiDebounce();
+        this.offlineUiTimer = setTimeout(() => {
+            this.offlineUiTimer = null;
+            this.updateStatus('disconnected');
+        }, this.OFFLINE_UI_DEBOUNCE_MS);
+    }
+
+    /** One MQTT client id per browser tab session — avoids looking like a new device on every reconnect */
+    private getStableClientId(): string {
+        if (typeof sessionStorage === 'undefined') {
+            return 'webapp_' + Math.random().toString(16).slice(2, 10);
+        }
+        const key = 'af_mqtt_client_id';
+        let id = sessionStorage.getItem(key);
+        if (!id) {
+            id = 'webapp_' + Math.random().toString(16).slice(2, 10);
+            sessionStorage.setItem(key, id);
+        }
+        return id;
+    }
+
+    /**
+     * After reconnect, `clean: true` drops broker-side subscriptions.
+     * Must subscribe to the default telemetry topic and every topic widgets registered.
+     */
+    private resubscribeAllTopics() {
         if (!this.client || !this.config) return;
 
-        // Default telemetry topic from config
-        const { telemetry } = this.config.topics;
-        this.client.subscribe(telemetry, (err) => {
-            if (err) console.error('Subscription error:', err);
+        const topics = new Set<string>();
+        topics.add(this.config.topics.telemetry);
+        this.topicCallbacks.forEach((_cbs, topic) => topics.add(topic));
+
+        topics.forEach((topic) => {
+            this.client!.subscribe(topic, (err: Error | null) => {
+                if (err) console.error('[MQTT] Subscribe error:', topic, err);
+            });
         });
     }
 
@@ -155,6 +283,11 @@ class MQTTService {
     }
 
     private handleMessage(topic: string, message: Buffer) {
+        this.clearOfflineUiDebounce();
+        if (this.client?.connected) {
+            this.updateStatus('connected');
+        }
+
         try {
             const payload = JSON.parse(message.toString());
 
@@ -166,6 +299,9 @@ class MQTTService {
             // Check for alarms
             this.checkThresholds(topic, payload);
 
+            // Persist numeric telemetry to database for historical charts
+            this.persistTelemetry(topic, payload);
+
             // Notify all subscribers for this specific topic
             const topicSubs = this.topicCallbacks.get(topic);
             if (topicSubs) {
@@ -174,6 +310,78 @@ class MQTTService {
         } catch (e) {
             console.error('Failed to parse MQTT JSON:', e);
         }
+    }
+
+    /**
+     * Buffer numeric telemetry values for batch insertion to Supabase.
+     * Maps each variable_name to its widget_id using allWidgets.
+     */
+    private persistTelemetry(topic: string, payload: any) {
+        if (!this.allWidgets.length) return;
+        const now = new Date().toISOString();
+        const nowMs = Date.now();
+
+        for (const [key, value] of Object.entries(payload)) {
+            if (typeof value !== 'number') continue;
+
+            // Find matching widget(s) for this variable
+            const matchingWidgets = this.allWidgets.filter(
+                w => w.variableName === key && w.mqttTopic === topic
+            );
+            
+            for (const widget of matchingWidgets) {
+                // Default to 10 seconds if no history interval is configured
+                const intervalSeconds = Math.max(5, widget.historyInterval || 10);
+                const lastStored = this.lastStoredTimestamps.get(widget.id) || 0;
+                
+                // Only push to buffer if the required interval has passed
+                if (nowMs - lastStored >= intervalSeconds * 1000) {
+                    this.telemetryBuffer.push({
+                        widget_id: widget.id,
+                        variable_name: key,
+                        value: value,
+                        unit: (widget.config as any)?.unit || undefined,
+                        created_at: now
+                    });
+                    this.lastStoredTimestamps.set(widget.id, nowMs);
+                }
+            }
+        }
+    }
+
+    /**
+     * Flush the telemetry buffer to Supabase in a single batch insert.
+     */
+    private async flushTelemetryBuffer() {
+        if (this.telemetryBuffer.length === 0) return;
+
+        const batch = [...this.telemetryBuffer];
+        this.telemetryBuffer = [];
+
+        try {
+            const { error } = await supabase
+                .from('telemetry_readings')
+                .insert(batch);
+
+            if (error) {
+                console.error('[MQTT] Failed to flush telemetry:', error.message);
+                // Put failed items back for retry (but cap to prevent memory leak)
+                if (this.telemetryBuffer.length < 5000) {
+                    this.telemetryBuffer.unshift(...batch);
+                }
+            }
+        } catch (err) {
+            console.error('[MQTT] Telemetry flush exception:', err);
+        }
+    }
+
+    /**
+     * Start periodic flushing of the telemetry buffer.
+     */
+    private startFlushTimer() {
+        if (this.flushTimer) return; // already running
+        this.bindTelemetryFlushLifecycle();
+        this.flushTimer = setInterval(() => this.flushTelemetryBuffer(), this.FLUSH_INTERVAL);
     }
 
     /**
@@ -213,11 +421,28 @@ class MQTTService {
     }
 
     disconnect() {
+        this.clearOfflineUiDebounce();
+        this.unbindVisibilityForStatusSync();
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('af_mqtt_client_id');
+        }
+        if (this.flushTimer) {
+            clearInterval(this.flushTimer);
+            this.flushTimer = null;
+        }
+        // Flush any remaining telemetry before disconnecting
+        this.flushTelemetryBuffer();
         if (this.client) {
-            this.client.end();
+            try {
+                this.client.removeAllListeners();
+            } catch {
+                /* ignore */
+            }
+            this.client.end(true);
             this.client = null;
             this.topicState = {};
             this.topicCallbacks.clear();
+            this.lastErrorMessage = null;
             this.updateStatus('disconnected');
         }
     }
@@ -236,7 +461,9 @@ class MQTTService {
     }
 
     setMonitoredWidgets(widgets: Widget[]) {
+        this.allWidgets = widgets;
         this.monitoredWidgets = widgets.filter(w => w.alarmEnabled);
+        this.startFlushTimer();
     }
 
     private async checkThresholds(topic: string, payload: any) {

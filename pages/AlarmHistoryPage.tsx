@@ -3,6 +3,8 @@ import { supabase } from '../services/supabase';
 import { Alarm, User } from '../types';
 import { AlertCircle, CheckCircle2, Clock, Trash2, RefreshCcw } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
+import { useToast } from '../components/ToastProvider';
+import { useConfirm } from '../components/ConfirmProvider';
 
 interface AlarmHistoryPageProps {
   user: User;
@@ -12,6 +14,8 @@ const AlarmHistoryPage: React.FC<AlarmHistoryPageProps> = ({ user }) => {
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [loading, setLoading] = useState(true);
   const t = TRANSLATIONS[user.language];
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     fetchAlarms(user.id);
@@ -21,7 +25,7 @@ const AlarmHistoryPage: React.FC<AlarmHistoryPageProps> = ({ user }) => {
     setLoading(true);
     const { data, error } = await supabase
       .from('alarms')
-      .select('*')
+      .select('id, user_id, widget_id, variable_name, trigger_value, threshold_value, alarm_type, severity, status, created_at, resolved_at, acknowledged_at, acknowledged_by')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -44,18 +48,89 @@ const AlarmHistoryPage: React.FC<AlarmHistoryPageProps> = ({ user }) => {
     setLoading(false);
   };
 
-  const deleteHistory = async () => {
-    if (!confirm(t.confirmClearHistory)) return;
+  /** PostgREST when the RPC has not been created in the database yet */
+  const isRpcMissingError = (err: { message?: string; code?: string; details?: string } | null) => {
+    if (!err) return false;
+    const code = String(err.code ?? '').toUpperCase();
+    const msg = `${err.message ?? ''} ${err.details ?? ''}`.toLowerCase();
+    if (code === 'PGRST202') return true;
+    if (msg.includes('could not find the function')) return true;
+    if (msg.includes('schema cache') && msg.includes('function')) return true;
+    return false;
+  };
 
-    const { error } = await supabase
+  const deleteHistoryByIdsFallback = async (): Promise<{ ok: boolean; nothingToClear?: boolean }> => {
+    // Any non-ACTIVE row is "history" (resolved / acknowledged). Avoid enum/casing mismatches on .in('status', …).
+    const { data: rows, error: fetchErr } = await supabase
       .from('alarms')
-      .delete()
+      .select('id')
       .eq('user_id', user.id)
-      .neq('status', 'ACTIVE'); // Keep active alarms
+      .neq('status', 'ACTIVE');
 
-    if (!error) {
-      fetchAlarms(user.id);
+    if (fetchErr) {
+      console.error('Failed to list alarms to clear:', fetchErr);
+      toast({ kind: 'error', title: t.clearHistoryError, message: fetchErr.message });
+      return { ok: false };
     }
+
+    const ids = (rows ?? []).map((r: { id: string }) => r.id).filter(Boolean);
+    if (ids.length === 0) {
+      return { ok: true, nothingToClear: true };
+    }
+
+    const chunkSize = 50;
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      const { error } = await supabase
+        .from('alarms')
+        .delete()
+        .eq('user_id', user.id)
+        .in('id', chunk);
+
+      if (error) {
+        console.error('Failed to clear alarm history:', error);
+        toast({ kind: 'error', title: t.clearHistoryError, message: error.message });
+        await fetchAlarms(user.id);
+        return { ok: false };
+      }
+    }
+    return { ok: true };
+  };
+
+  const deleteHistory = async () => {
+    const ok = await confirm({
+      title: t.clearHistory,
+      message: t.confirmClearHistory,
+      confirmText: t.clearHistory,
+      cancelText: t.cancel,
+      danger: true,
+    });
+    if (!ok) return;
+
+    const { error: rpcError } = await supabase.rpc('clear_alarm_history');
+
+    if (!rpcError) {
+      await fetchAlarms(user.id);
+      toast({ kind: 'success', title: t.clearHistory, message: 'Alarm history cleared.' });
+      return;
+    }
+
+    if (isRpcMissingError(rpcError)) {
+      console.warn('clear_alarm_history RPC not available, using client delete:', rpcError.message);
+    } else {
+      console.warn('clear_alarm_history RPC failed, trying client delete:', rpcError);
+    }
+
+    const fallback = await deleteHistoryByIdsFallback();
+    if (!fallback.ok) return;
+
+    if (fallback.nothingToClear) {
+      toast({ kind: 'info', title: t.clearHistory, message: t.noHistoricalAlarmsToClear });
+      return;
+    }
+
+    await fetchAlarms(user.id);
+    toast({ kind: 'success', title: t.clearHistory, message: 'Alarm history cleared.' });
   };
 
   const getStatusIcon = (status: string) => {

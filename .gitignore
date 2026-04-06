@@ -26,3 +26,9 @@ dist-ssr
 .env.local
 .env.*.local
 .vercel
+
+# Cursor / local agent artifacts
+.cursor/
+
+# Office temp files
+~$*.docx
