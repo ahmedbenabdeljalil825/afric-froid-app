@@ -111,6 +111,13 @@ class MQTTService {
         return trimmed;
     }
 
+    private firstDefined(obj: Record<string, any>, keys: string[]): unknown {
+        for (const key of keys) {
+            if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+        }
+        return undefined;
+    }
+
     private normalizeMqttConfig(input: unknown): MqttConfig | null {
         let cfg: any = input;
         if (typeof cfg === 'string') {
@@ -122,16 +129,37 @@ class MQTTService {
         }
         if (!cfg || typeof cfg !== 'object') return null;
 
-        const brokerUrl = this.sanitizeCredential(cfg.brokerUrl);
+        const auth = (cfg.auth && typeof cfg.auth === 'object') ? cfg.auth : {};
+        const brokerUrl = this.sanitizeCredential(
+            this.firstDefined(cfg, ['brokerUrl', 'broker_url', 'url', 'broker'])
+        );
         if (!brokerUrl) return null;
+
+        const username = this.sanitizeCredential(
+            this.firstDefined(cfg, ['username', 'user', 'userName', 'mqttUsername'])
+                ?? this.firstDefined(auth, ['username', 'user', 'userName'])
+        );
+        const password = this.sanitizeCredential(
+            this.firstDefined(cfg, ['password', 'pass', 'passWord', 'mqttPassword'])
+                ?? this.firstDefined(auth, ['password', 'pass', 'passWord'])
+        );
+        const topicsSrc = (cfg.topics && typeof cfg.topics === 'object') ? cfg.topics : {};
 
         return {
             brokerUrl,
-            username: this.sanitizeCredential(cfg.username),
-            password: this.sanitizeCredential(cfg.password),
+            username,
+            password,
             topics: {
-                telemetry: String(cfg?.topics?.telemetry || '').trim(),
-                command: String(cfg?.topics?.command || '').trim(),
+                telemetry: String(
+                    this.firstDefined(topicsSrc, ['telemetry', 'telemetry_topic', 'data', 'read'])
+                    ?? this.firstDefined(cfg, ['telemetryTopic', 'telemetry_topic'])
+                    ?? ''
+                ).trim(),
+                command: String(
+                    this.firstDefined(topicsSrc, ['command', 'command_topic', 'write', 'control'])
+                    ?? this.firstDefined(cfg, ['commandTopic', 'command_topic'])
+                    ?? ''
+                ).trim(),
             },
         };
     }
