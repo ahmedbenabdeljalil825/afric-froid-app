@@ -118,6 +118,17 @@ class MQTTService {
         return undefined;
     }
 
+    private normalizeBrokerUrl(rawUrl: string): string {
+        const trimmed = rawUrl.trim();
+        if (!trimmed) return trimmed;
+
+        // In HTTPS production pages, browsers block insecure WebSocket (ws://).
+        if (typeof window !== 'undefined' && window.location.protocol === 'https:' && trimmed.startsWith('ws://')) {
+            return 'wss://' + trimmed.slice('ws://'.length);
+        }
+        return trimmed;
+    }
+
     private normalizeMqttConfig(input: unknown): MqttConfig | null {
         let cfg: any = input;
         if (typeof cfg === 'string') {
@@ -130,9 +141,10 @@ class MQTTService {
         if (!cfg || typeof cfg !== 'object') return null;
 
         const auth = (cfg.auth && typeof cfg.auth === 'object') ? cfg.auth : {};
-        const brokerUrl = this.sanitizeCredential(
+        const brokerRaw = this.sanitizeCredential(
             this.firstDefined(cfg, ['brokerUrl', 'broker_url', 'url', 'broker'])
         );
+        const brokerUrl = brokerRaw ? this.normalizeBrokerUrl(brokerRaw) : undefined;
         if (!brokerUrl) return null;
 
         const username = this.sanitizeCredential(
