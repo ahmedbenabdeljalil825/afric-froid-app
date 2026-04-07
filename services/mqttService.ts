@@ -96,7 +96,54 @@ class MQTTService {
         return this.lastErrorMessage;
     }
 
+    private sanitizeCredential(value: unknown): string | undefined {
+        if (value === null || value === undefined) return undefined;
+        const trimmed = String(value).trim();
+        if (!trimmed) return undefined;
+
+        // Defensive: some payload paths can accidentally wrap credentials in quotes.
+        const wrappedInDoubleQuotes = trimmed.startsWith('"') && trimmed.endsWith('"');
+        const wrappedInSingleQuotes = trimmed.startsWith("'") && trimmed.endsWith("'");
+        if (wrappedInDoubleQuotes || wrappedInSingleQuotes) {
+            const unwrapped = trimmed.slice(1, -1).trim();
+            return unwrapped || undefined;
+        }
+        return trimmed;
+    }
+
+    private normalizeMqttConfig(input: unknown): MqttConfig | null {
+        let cfg: any = input;
+        if (typeof cfg === 'string') {
+            try {
+                cfg = JSON.parse(cfg);
+            } catch {
+                return null;
+            }
+        }
+        if (!cfg || typeof cfg !== 'object') return null;
+
+        const brokerUrl = this.sanitizeCredential(cfg.brokerUrl);
+        if (!brokerUrl) return null;
+
+        return {
+            brokerUrl,
+            username: this.sanitizeCredential(cfg.username),
+            password: this.sanitizeCredential(cfg.password),
+            topics: {
+                telemetry: String(cfg?.topics?.telemetry || '').trim(),
+                command: String(cfg?.topics?.command || '').trim(),
+            },
+        };
+    }
+
     connect(config: MqttConfig) {
+        const normalized = this.normalizeMqttConfig(config as unknown);
+        if (!normalized) {
+            this.lastErrorMessage = 'Invalid MQTT configuration (broker URL or JSON format).';
+            this.updateStatus('error');
+            return;
+        }
+
         if (this.client) {
             try {
                 this.client.removeAllListeners();
@@ -109,7 +156,7 @@ class MQTTService {
 
         this.updateStatus('connecting');
         this.lastErrorMessage = null;
-        this.config = config;
+        this.config = normalized;
         // console.log('Connecting to MQTT Broker:', config.brokerUrl);
 
         const options: mqtt.IClientOptions = {
@@ -122,13 +169,13 @@ class MQTTService {
             connectTimeout: 30 * 1000,
         };
 
-        if (config.username) options.username = config.username;
-        if (config.password) options.password = config.password;
+        if (normalized.username) options.username = normalized.username;
+        if (normalized.password) options.password = normalized.password;
 
-        this.client = mqtt.connect(config.brokerUrl, options);
+        this.client = mqtt.connect(normalized.brokerUrl, options);
 
         this.client.on('connect', () => {
-            console.log(`[MQTT] Connected successfully to ${config.brokerUrl}`);
+            console.log(`[MQTT] Connected successfully to ${normalized.brokerUrl}`);
             this.lastErrorMessage = null;
             this.clearOfflineUiDebounce();
             this.updateStatus('connected');
@@ -170,7 +217,7 @@ class MQTTService {
         this.client.on('reconnect', () => {
             // Do not set status to 'connecting' here — brief tab switches trigger this often and flash the UI.
             // Status is already 'disconnected' from 'offline'; 'connect' will restore 'connected'.
-            console.log(`[MQTT] Attempting to reconnect to ${config.brokerUrl}...`);
+            console.log(`[MQTT] Attempting to reconnect to ${normalized.brokerUrl}...`);
         });
 
         this.client.on('close', () => {
