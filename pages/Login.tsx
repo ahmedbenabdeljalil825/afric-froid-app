@@ -15,6 +15,8 @@ const BrandLogoVertical = ({ className = "" }: { className?: string }) => {
 };
 
 const Login: React.FC = () => {
+  const companyIdInputId = useId();
+  const passwordInputId = useId();
   // Initialize from localStorage or default to 'en'
   const [lang, setLang] = useState<'en' | 'fr'>(() => {
     return (localStorage.getItem('AFRIC_FROID_LANG') as 'en' | 'fr') || 'en';
@@ -138,41 +140,66 @@ const Login: React.FC = () => {
               <p className="text-slate-500 text-lg font-medium leading-relaxed">{t.industrialMonitoring}</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-8"
+              autoComplete="on"
+              noValidate
+            >
               <div className="space-y-6">
 
                 {/* Company ID */}
                 <div className="space-y-2 group animate-enter delay-100">
-                  <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-[0.15em] transition-colors duration-300 group-focus-within:text-[#009fe3]">{t.companyId}</label>
+                  <label
+                    htmlFor={companyIdInputId}
+                    className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-[0.15em] transition-colors duration-300 group-focus-within:text-[#009fe3]"
+                  >
+                    {t.companyId}
+                  </label>
                   <div className="relative transform transition-all duration-500 group-focus-within:translate-x-1">
                     <div className="absolute left-5 inset-y-0 flex items-center justify-center pointer-events-none text-slate-300 group-focus-within:text-[#009fe3] transition-colors duration-300">
                       <Hash size={20} />
                     </div>
                     <input
+                      id={companyIdInputId}
+                      name="username"
                       type="text"
                       value={companyId}
                       onChange={(e) => setCompanyId(e.target.value)}
                       className="w-full pl-14 pr-4 py-5 bg-slate-50/50 border border-slate-200 rounded-[22px] text-slate-900 placeholder:text-slate-300 font-semibold focus:outline-none focus:border-[#009fe3] focus:bg-white focus:ring-[6px] focus:ring-[#009fe3]/5 transition-all duration-300 shadow-sm group-hover:border-slate-300"
                       placeholder="e.g. AF-XXXX"
                       autoComplete="username"
+                      autoCapitalize="none"
+                      spellCheck={false}
+                      required
+                      aria-required="true"
                     />
                   </div>
                 </div>
 
                 {/* Password */}
                 <div className="space-y-2 group animate-enter delay-200">
-                  <label className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-[0.15em] transition-colors duration-300 group-focus-within:text-[#009fe3]">{t.password}</label>
+                  <label
+                    htmlFor={passwordInputId}
+                    className="text-[11px] font-black text-slate-400 ml-1 uppercase tracking-[0.15em] transition-colors duration-300 group-focus-within:text-[#009fe3]"
+                  >
+                    {t.password}
+                  </label>
                   <div className="relative transform transition-all duration-500 group-focus-within:translate-x-1">
                     <div className="absolute left-5 inset-y-0 flex items-center justify-center pointer-events-none text-slate-300 group-focus-within:text-[#009fe3] transition-colors duration-300">
                       <Lock size={20} />
                     </div>
                     <input
+                      id={passwordInputId}
+                      name="password"
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full pl-14 pr-14 py-5 bg-slate-50/50 border border-slate-200 rounded-[22px] text-slate-900 placeholder:text-slate-300 font-semibold focus:outline-none focus:border-[#009fe3] focus:bg-white focus:ring-[6px] focus:ring-[#009fe3]/5 transition-all duration-300 shadow-sm group-hover:border-slate-300"
                       placeholder="••••••••••••"
                       autoComplete="current-password"
+                      required
+                      aria-required="true"
                     />
                     <div className="absolute right-4 inset-y-0 flex items-center justify-center">
                       <button
@@ -227,6 +254,9 @@ const Login: React.FC = () => {
             </form>
 
             <div className="pt-8 border-t border-slate-100 text-center animate-enter delay-500">
+              <p className="text-xs text-slate-400 mb-4">
+                Secure sign-in portal for AFRIC FROID industrial refrigeration clients.
+              </p>
               <a href="https://www.frigoindus.net" target="_blank" rel="noopener noreferrer" className="text-[11px] font-black text-slate-300 hover:text-[#009fe3] transition-all duration-300 inline-flex items-center gap-2 group uppercase tracking-[0.2em]">
                 {t.visitWebsite}
                 <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500" />
