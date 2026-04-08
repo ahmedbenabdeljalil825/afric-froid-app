@@ -30,6 +30,7 @@ class MQTTService {
     private readonly OFFLINE_UI_DEBOUNCE_MS = 12_000;
     private visibilityUiBound = false;
     private telemetryLifecycleBound = false;
+    private brokerAutoUpgradedToWss = false;
 
     constructor() {
         this.loadStateFromStorage();
@@ -121,9 +122,11 @@ class MQTTService {
     private normalizeBrokerUrl(rawUrl: string): string {
         const trimmed = rawUrl.trim();
         if (!trimmed) return trimmed;
+        this.brokerAutoUpgradedToWss = false;
 
         // In HTTPS production pages, browsers block insecure WebSocket (ws://).
         if (typeof window !== 'undefined' && window.location.protocol === 'https:' && trimmed.startsWith('ws://')) {
+            this.brokerAutoUpgradedToWss = true;
             return 'wss://' + trimmed.slice('ws://'.length);
         }
         return trimmed;
@@ -213,9 +216,11 @@ class MQTTService {
         if (normalized.password) options.password = normalized.password;
 
         this.client = mqtt.connect(normalized.brokerUrl, options);
+        let everConnected = false;
 
         this.client.on('connect', () => {
             console.log(`[MQTT] Connected successfully to ${normalized.brokerUrl}`);
+            everConnected = true;
             this.lastErrorMessage = null;
             this.clearOfflineUiDebounce();
             this.updateStatus('connected');
@@ -262,6 +267,11 @@ class MQTTService {
 
         this.client.on('close', () => {
             console.warn('[MQTT] Connection closed');
+            if (!everConnected && this.brokerAutoUpgradedToWss) {
+                this.lastErrorMessage =
+                    'Broker closed WSS handshake. Your broker likely supports ws:// only. Configure TLS/WSS on broker (or reverse proxy) for production HTTPS.';
+                this.updateStatus('error');
+            }
         });
 
         this.client.on('disconnect', (packet) => {

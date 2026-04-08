@@ -32,3 +32,7 @@ dist-ssr
 
 # Office temp files
 ~$*.docx
+
+# Local Android toolchains (do not commit)
+.android-sdk/
+.tools/

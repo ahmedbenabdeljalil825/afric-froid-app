@@ -3,32 +3,14 @@ import { ArrowRight, Building2, Lock, Eye, EyeOff, CheckCircle2, Hash, Globe } f
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../services/supabase';
 
-// Complete Vertical Logo (Icon + Text) matching the brand image geometry
+// AFRIC FROID official logo image (provided by the company)
 const BrandLogoVertical = ({ className = "" }: { className?: string }) => {
-  const filterId = useId();
-
   return (
-    <svg
-      viewBox="0 0 260 220"
-      className={`${className} overflow-visible`}
-    >
-      <defs>
-        <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.15" />
-        </filter>
-      </defs>
-
-      <g transform="translate(20, 20)">
-        <path d="M30,170 L90,170 L120,40 L60,40 Z" fill="#002060" filter={`url(#${filterId})`} />
-        <path d="M95,130 L155,130 L185,0 L125,0 Z" fill="#009fe3" filter={`url(#${filterId})`} />
-        <text x="75" y="125" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="65" fill="white" textAnchor="middle">A</text>
-        <text x="140" y="85" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="65" fill="white" textAnchor="middle">F</text>
-        <g transform="translate(95, 165)" fill="#002060" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="28" className="italic">
-          <text x="0" y="0">AFRIC</text>
-          <text x="0" y="30">FROID</text>
-        </g>
-      </g>
-    </svg>
+    <img
+      src="/afric-froid-logo.png"
+      alt="AFRIC FROID logo"
+      className={className}
+    />
   );
 };
 
