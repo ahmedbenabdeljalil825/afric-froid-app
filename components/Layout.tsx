@@ -23,23 +23,12 @@ interface LayoutProps {
   onLogout: () => void;
 }
 
-// Brand Icon only (No Text) for small spaces, matching the geometry
 const BrandIcon = ({ className = "h-10 w-10" }: { className?: string }) => (
-  <svg
-    viewBox="0 0 200 180"
+  <img
+    src="/afric-froid-logo.png"
+    alt="AFRIC FROID logo"
     className={className}
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <g transform="translate(0, 0)">
-      {/* Left Shape */}
-      <path d="M30,170 L90,170 L120,40 L60,40 Z" fill="#002060" />
-      {/* Right Shape */}
-      <path d="M95,130 L155,130 L185,0 L125,0 Z" fill="#009fe3" />
-      {/* Letters */}
-      <text x="75" y="125" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="65" fill="white" textAnchor="middle">A</text>
-      <text x="140" y="85" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="65" fill="white" textAnchor="middle">F</text>
-    </g>
-  </svg>
+  />
 );
 
 const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
