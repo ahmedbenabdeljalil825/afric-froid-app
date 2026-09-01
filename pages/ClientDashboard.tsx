@@ -293,7 +293,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
                     widget.widgetType === ReadingWidgetType.LINE_CHART ? chartSeries : undefined
                   }
                   isAlarm={isAlarm}
-                  isOffline={mqttStatus !== 'connected'}
+                  isOffline={false}
                   timeRange={range}
                   onRangeChange={(r) => setTimeRanges((prev) => ({ ...prev, [widget.id]: r }))}
                 />
