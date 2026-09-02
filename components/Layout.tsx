@@ -15,7 +15,6 @@ import { motion } from 'framer-motion';
 import { User, UserRole } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { BrokerStatus } from './BrokerStatus';
-import { AlarmBell } from './AlarmBell';
 
 interface LayoutProps {
   children?: React.ReactNode;
@@ -163,4 +162,5 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 };
 
 export default Layout;
+
 
