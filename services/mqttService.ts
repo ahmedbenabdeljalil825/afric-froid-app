@@ -386,7 +386,10 @@ class MQTTService {
         }
 
         try {
-            const payload = JSON.parse(message.toString());
+            let msgStr = message.toString();
+            // Sanitize Danfoss Alsmart's uppercase booleans back to standard JSON
+            msgStr = msgStr.replace(/:TRUE/g, ':true').replace(/:FALSE/g, ':false');
+            const payload = JSON.parse(msgStr);
 
             // Store locally for future "Read-Modify-Write" operations
             this.topicState[topic] = payload;
@@ -477,7 +480,10 @@ class MQTTService {
         const newState = { ...currentState, [variableName]: newValue };
 
         // 3. Write
-        const payload = JSON.stringify(newState);
+        let payload = JSON.stringify(newState);
+        // Danfoss Alsmart expects non-standard unquoted uppercase TRUE/FALSE
+        payload = payload.replace(/:true/g, ':TRUE').replace(/:false/g, ':FALSE');
+
         this.client.publish(topic, payload, { qos: 1, retain: false }, (err: Error | undefined) => {
             if (err) {
                 console.error('Publish error:', err);
@@ -493,7 +499,9 @@ class MQTTService {
 
     publishRaw(topic: string, payload: any) {
         if (!this.client || !this.client.connected) return;
-        this.client.publish(topic, JSON.stringify(payload), { qos: 1 });
+        let strPayload = typeof payload === 'string' ? payload : JSON.stringify(payload);
+        strPayload = strPayload.replace(/:true/g, ':TRUE').replace(/:false/g, ':FALSE');
+        this.client.publish(topic, strPayload, { qos: 1 });
     }
 
     disconnect() {
