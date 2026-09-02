@@ -449,28 +449,7 @@ class MQTTService {
     /**
      * Flush the telemetry buffer to Supabase in a single batch insert.
      */
-    private async flushTelemetryBuffer() {
-        if (this.telemetryBuffer.length === 0) return;
-
-        const batch = [...this.telemetryBuffer];
-        this.telemetryBuffer = [];
-
-        try {
-            const { error } = await supabase
-                .from('telemetry_readings')
-                .insert(batch);
-
-            if (error) {
-                console.error('[MQTT] Failed to flush telemetry:', error.message);
-                // Put failed items back for retry (but cap to prevent memory leak)
-                if (this.telemetryBuffer.length < 5000) {
-                    this.telemetryBuffer.unshift(...batch);
-                }
-            }
-        } catch (err) {
-            console.error('[MQTT] Telemetry flush exception:', err);
-        }
-    }
+    private async flushTelemetryBuffer() { /* Disabled: Handled by PC bridge */ }
 
     /**
      * Start periodic flushing of the telemetry buffer.
@@ -486,37 +465,35 @@ class MQTTService {
      * updates one variable, and publishes the full JSON back.
      */
     publishVariableUpdate(topic: string, variableName: string, newValue: any) {
+        if (!this.client || !this.client.connected) {
+            console.error('Cannot publish: MQTT client not connected');
+            return;
+        }
+
         // 1. Get current state (Read)
         const currentState = this.topicState[topic] || {};
 
         // 2. Modify (Deep clone to avoid side effects)
         const newState = { ...currentState, [variableName]: newValue };
-        const payload = JSON.stringify(newState);
 
-        // 3. Write via Supabase Realtime (Path A)
-        this.publishRaw(topic, payload);
-        
-        // Optimistically update local state to avoid UI jumping
-        this.topicState[topic] = newState;
-        this.topicTimestamps[topic] = Date.now();
-        this.saveStateToStorage();
+        // 3. Write
+        const payload = JSON.stringify(newState);
+        this.client.publish(topic, payload, { qos: 1, retain: false }, (err: Error | undefined) => {
+            if (err) {
+                console.error('Publish error:', err);
+            } else {
+                // console.log(`Published update to ${topic}:`, payload);
+                // Optimistically update local state to avoid race conditions
+                this.topicState[topic] = newState;
+                this.topicTimestamps[topic] = Date.now();
+                this.saveStateToStorage();
+            }
+        });
     }
 
     publishRaw(topic: string, payload: any) {
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            if (!user) {
-                console.error('Cannot publish command: No user logged in');
-                return;
-            }
-            supabase.from('device_commands').insert({
-                user_id: user.id,
-                topic: topic,
-                payload: typeof payload === 'string' ? payload : JSON.stringify(payload)
-            }).then(({ error }) => {
-                if (error) console.error('Failed to dispatch command to Supabase:', error);
-                else console.log('Command queued in Supabase for telemetry bridge to pick up.');
-            });
-        });
+        if (!this.client || !this.client.connected) return;
+        this.client.publish(topic, JSON.stringify(payload), { qos: 1 });
     }
 
     disconnect() {
@@ -631,3 +608,4 @@ class MQTTService {
 }
 
 export const mqttService = new MQTTService();
+
