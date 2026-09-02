@@ -478,7 +478,7 @@ class MQTTService {
 
         // 3. Write
         const payload = JSON.stringify(newState);
-        this.client.publish(topic, payload, { qos: 1, retain: false }, (err: Error | undefined) => {
+        this.client.publish(topic, payload, { qos: 0, retain: false }, (err: Error | undefined) => {
             if (err) {
                 console.error('Publish error:', err);
             } else {
@@ -493,7 +493,7 @@ class MQTTService {
 
     publishRaw(topic: string, payload: any) {
         if (!this.client || !this.client.connected) return;
-        this.client.publish(topic, JSON.stringify(payload), { qos: 1 });
+        this.client.publish(topic, JSON.stringify(payload), { qos: 0 });
     }
 
     disconnect() {
