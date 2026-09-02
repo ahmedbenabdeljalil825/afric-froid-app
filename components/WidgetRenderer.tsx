@@ -873,8 +873,8 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
         setConfirming(false);
         if (confirmTimer.current) clearTimeout(confirmTimer.current);
 
-        const nextState = !isOn;
-        setIsOn(nextState);
+        const nextState = !isOn ? 1 : 0;
+        setIsOn(!!nextState);
         // Lock for 2 s so MQTT subscription echo cannot revert the optimistic state
         setLocked(true);
         if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
