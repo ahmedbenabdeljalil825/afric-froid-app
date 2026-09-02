@@ -793,7 +793,57 @@ const AdminUserDesigner: React.FC = () => {
                                             </div>
                                         )}
 
-                                                                        {/* Toggle Config */}
+                                                                        {/* LED Config */}
+                                    {widgetForm.widgetType === ReadingWidgetType.LED_INDICATOR && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">Active Color</label>
+                                                <select
+                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm"
+                                                    value={(widgetForm.config as any)?.activeColor ?? 'emerald'}
+                                                    onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), activeColor: e.target.value } })}
+                                                >
+                                                    <option value="emerald">Green (Normal Operation)</option>
+                                                    <option value="red">Red (Alarm / Critical)</option>
+                                                    <option value="blue">Blue</option>
+                                                    <option value="amber">Yellow/Amber</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">ON Payload (JSON)</label>
+                                                <input
+                                                    type="text"
+                                                    title="Payload for ON state"
+                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm font-mono"
+                                                    placeholder="e.g. true or 1 or 'TRUE'"
+                                                    value={(widgetForm.config as any)?.onPayload ?? ''}
+                                                    onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), onPayload: e.target.value } })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">Active Label</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm"
+                                                    placeholder="e.g. ALARM or ACTIVE"
+                                                    value={(widgetForm.config as any)?.activeLabel ?? ''}
+                                                    onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), activeLabel: e.target.value } })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 mb-1">Inactive Label</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm"
+                                                    placeholder="e.g. OK or INACTIVE"
+                                                    value={(widgetForm.config as any)?.inactiveLabel ?? ''}
+                                                    onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), inactiveLabel: e.target.value } })}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Toggle Config */}
                                     {widgetForm.widgetType === ControllingWidgetType.TOGGLE && (
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
@@ -992,4 +1042,5 @@ const AdminUserDesigner: React.FC = () => {
 };
 
 export default AdminUserDesigner;
+
 

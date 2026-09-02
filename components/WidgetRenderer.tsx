@@ -476,9 +476,45 @@ const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?:
 
 // ── LED Indicator Widget ──
 const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
-    const color = getColor(colorIndex);
-    const status = currentValue === true || currentValue === '1' || currentValue === 'on' || currentValue === 'RUNNING';
+    const config = (widget.config || {}) as any;
     const t = TRANSLATIONS[language];
+    
+    let status = false;
+    if (currentValue !== undefined && currentValue !== null) {
+        if (config.onPayload !== undefined && config.onPayload !== '') {
+            try {
+                if (currentValue === JSON.parse(config.onPayload)) status = true;
+            } catch (e) {
+                if (String(currentValue) === String(config.onPayload)) status = true;
+            }
+        } else {
+            // Default parsing
+            const s = String(currentValue).toLowerCase();
+            status = s === 'true' || s === '1' || s === 'on' || s === 'running' || s === 'active';
+        }
+    }
+
+    const activeColorStr = config.activeColor || 'emerald';
+    let bgColorClass = 'bg-emerald-500 shadow-emerald-400/50';
+    let pingColorClass = 'bg-emerald-400';
+    let textColorClass = 'text-emerald-600';
+    
+    if (activeColorStr === 'red') {
+        bgColorClass = 'bg-red-500 shadow-red-400/50';
+        pingColorClass = 'bg-red-400';
+        textColorClass = 'text-red-600';
+    } else if (activeColorStr === 'blue') {
+        bgColorClass = 'bg-blue-500 shadow-blue-400/50';
+        pingColorClass = 'bg-blue-400';
+        textColorClass = 'text-blue-600';
+    } else if (activeColorStr === 'amber') {
+        bgColorClass = 'bg-amber-500 shadow-amber-400/50';
+        pingColorClass = 'bg-amber-400';
+        textColorClass = 'text-amber-600';
+    }
+
+    const activeLabel = config.activeLabel || t.active;
+    const inactiveLabel = config.inactiveLabel || t.inactive;
 
     return (
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
@@ -489,14 +525,14 @@ const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; current
                     content={mqttTopicVariableTooltip(t, widget)}
                 />
             </div>
-            <div className={`w-20 h-20 rounded-full shadow-2xl relative transition-all duration-700 ${status ? 'bg-emerald-500 shadow-emerald-400/50 scale-110' : 'bg-slate-200 shadow-inner scale-100'}`}>
+            <div className={`w-20 h-20 rounded-full shadow-2xl relative transition-all duration-700 ${status ? `${bgColorClass} scale-110` : 'bg-slate-200 shadow-inner scale-100'}`}>
                 {status && (
-                    <div className="absolute inset-0 rounded-full animate-ping bg-emerald-400 opacity-20" />
+                    <div className={`absolute inset-0 rounded-full animate-ping opacity-20 ${pingColorClass}`} />
                 )}
                 <div className="absolute top-3 left-5 w-5 h-2.5 bg-white/30 rounded-full blur-[1.5px]" />
             </div>
-            <p className={`mt-6 text-xs font-black tracking-[0.2em] transition-colors duration-500 ${status ? 'text-emerald-600' : 'text-slate-500'}`}>
-                {status ? t.active.toUpperCase() : t.inactive.toUpperCase()}
+            <p className={`mt-6 text-xs font-black tracking-[0.2em] transition-colors duration-500 ${status ? textColorClass : 'text-slate-500'}`}>
+                {status ? activeLabel.toUpperCase() : inactiveLabel.toUpperCase()}
             </p>
             <p className="text-[10px] text-slate-500 font-mono mt-1">{widget.dataLabel || widget.variableName}</p>
         </div>

@@ -116,6 +116,14 @@ export interface ChartConfig {
   tickInterval?: number;
 }
 
+export interface LEDConfig {
+  activeColor?: string;
+  activeLabel?: string;
+  inactiveLabel?: string;
+  onPayload?: string;
+  offPayload?: string;
+}
+
 export interface ToggleConfig {
   onPayload?: string;
   offPayload?: string;
@@ -380,4 +388,5 @@ export interface Translation {
   exportCsvVariable: string;
   exportCsvUnit: string;
 }
+
 
