@@ -96,8 +96,7 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
                 </div>
                 
                 <button 
-                  onClick={toggleAlarmSound}
-                  aria-label="Toggle Alarm Sound"
+                  
                   style={{ width: '80px', height: '40px' }}
                   className={`relative shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 ${
                     user.config?.alarmSoundEnabled ? 'bg-sky-500' : 'bg-slate-200'
@@ -231,4 +230,5 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
 };
 
 export default Settings;
+
 
