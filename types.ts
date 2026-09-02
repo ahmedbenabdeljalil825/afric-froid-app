@@ -116,6 +116,11 @@ export interface ChartConfig {
   tickInterval?: number;
 }
 
+export interface ToggleConfig {
+  onPayload?: string;
+  offPayload?: string;
+}
+
 export interface ButtonConfig {
   label: string;
   payload: string;
@@ -375,3 +380,4 @@ export interface Translation {
   exportCsvVariable: string;
   exportCsvUnit: string;
 }
+

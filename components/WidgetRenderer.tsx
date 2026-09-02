@@ -844,6 +844,18 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
 
     const parseValue = (val: any): boolean => {
         if (val === undefined || val === null) return false;
+        
+        const config = widget.config as any;
+        if (config?.onPayload !== undefined && config?.offPayload !== undefined && config.onPayload !== '' && config.offPayload !== '') {
+            try {
+                if (val === JSON.parse(config.onPayload)) return true;
+                if (val === JSON.parse(config.offPayload)) return false;
+            } catch (e) {
+                if (String(val) === String(config.onPayload)) return true;
+                if (String(val) === String(config.offPayload)) return false;
+            }
+        }
+        
         const s = String(val).toLowerCase();
         return s === 'true' || s === '1' || s === 'on' || s === 'active' || s === 'running' || s === 'override_active';
     };
@@ -881,7 +893,19 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
         lockTimerRef.current = setTimeout(() => {
             setLocked(false);
         }, 2000);
-        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, nextState);
+        
+        let targetPayload: any = nextState;
+        const config = widget.config as any;
+        if (config?.onPayload !== undefined && config?.offPayload !== undefined && config.onPayload !== '' && config.offPayload !== '') {
+            const raw = nextState ? config.onPayload : config.offPayload;
+            try {
+                targetPayload = JSON.parse(raw);
+            } catch (e) {
+                targetPayload = raw;
+            }
+        }
+        
+        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, targetPayload);
     };
 
     return (
@@ -1434,6 +1458,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 };
 
 export default WidgetRenderer;
+
 
 
 
