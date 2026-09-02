@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { Lock, CheckCircle2, AlertCircle, Loader2, Bell, Volume2, VolumeX, BellRing } from 'lucide-react';
+import { Lock, CheckCircle2, AlertCircle, Loader2, } from 'lucide-react';
 import { TRANSLATIONS, DEFAULT_USER_CONFIG } from '../constants';
 import { supabase } from '../services/supabase';
-import { playSiren, initAudio } from '../utils/audio';
 
 interface SettingsProps {
   user: User;
@@ -77,65 +76,6 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
         </div>
 
       <div className="space-y-8">
-        {/* Preferences Section */}
-        <div className="bg-white rounded-[32px] p-8 lg:p-10 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group">
-           <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50/50 rounded-full blur-3xl -mr-16 -mt-16 transition-transform duration-1000 group-hover:scale-150"></div>
-           
-           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            <div className="p-5 bg-sky-50 rounded-[24px] shadow-inner text-sky-500 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3">
-              <Bell size={32} />
-            </div>
-            
-            <div className="flex-1 min-w-0 w-full">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-2xl font-black text-[#002060] tracking-tight truncate">{t.alarmSound}</h3>
-                  <p className="text-slate-500 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
-                    {user.config?.alarmSoundEnabled ? t.enableAlarmSound : t.disableAlarmSound}
-                  </p>
-                </div>
-                
-                <button 
-                  
-                  style={{ width: '80px', height: '40px' }}
-                  className={`relative shrink-0 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 ${
-                    user.config?.alarmSoundEnabled ? 'bg-sky-500' : 'bg-slate-200'
-                  }`}
-                >
-                  <div 
-                    style={{ 
-                      width: '32px', 
-                      height: '32px', 
-                      left: '4px',
-                      transform: user.config?.alarmSoundEnabled ? 'translateX(40px)' : 'translateX(0)'
-                    }}
-                    className="absolute top-1 flex items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 ease-in-out z-10"
-                  >
-                    {user.config?.alarmSoundEnabled ? (
-                      <Volume2 className="size-5 text-sky-500" />
-                    ) : (
-                      <VolumeX className="size-5 text-slate-400" />
-                    )}
-                  </div>
-                </button>
-
-                {/* Test Sound Button */}
-                <button
-                  onClick={() => {
-                    initAudio(); // Prompt resume on interaction
-                    playSiren();
-                  }}
-                  className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 text-slate-600 font-bold hover:bg-slate-100 active:scale-95 transition-all border border-slate-200"
-                  title={t.testSound}
-                >
-                  <BellRing className="size-5 text-[#002060]" />
-                  <span>{t.testSound}</span>
-                </button>
-              </div>
-            </div>
-           </div>
-        </div>
-
         {/* Security Section */}
         <div className="bg-white rounded-[32px] p-8 lg:p-10 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group">
            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/50 rounded-full blur-3xl -mr-16 -mt-16 transition-transform duration-1000 group-hover:scale-150"></div>
@@ -230,5 +170,6 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
 };
 
 export default Settings;
+
 
 
