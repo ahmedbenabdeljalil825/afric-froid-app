@@ -104,7 +104,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
               <>
                 <NavItem path="/dashboard" icon={LayoutDashboard} label={t.dashboard} />
                 <NavItem path="/controls" icon={Activity} label={t.controls} />
-                <NavItem path="/alarms" icon={Bell} label={t.alarms} />
                 <NavItem path="/settings" icon={Settings} label={t.settings} />
                 <NavItem path="/about" icon={Info} label={t.about} />
               </>
@@ -140,8 +139,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             <span className="font-bold text-slate-900 italic">AFRIC FROID</span>
           </div>
           <div className="flex items-center gap-2">
-            <AlarmBell user={user} />
-            <BrokerStatus user={user} />
+                        <BrokerStatus user={user} />
             <button
               onClick={() => setSidebarOpen(!isSidebarOpen)}
               className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
@@ -154,8 +152,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
         <div className="flex-1 overflow-auto p-4 lg:p-8 bg-slate-50">
           <div className="max-w-7xl mx-auto space-y-8">
             <div className="hidden lg:flex justify-end items-center gap-3 mb-4">
-              <AlarmBell user={user} />
-              <BrokerStatus user={user} />
+                            <BrokerStatus user={user} />
             </div>
             <Outlet />
           </div>

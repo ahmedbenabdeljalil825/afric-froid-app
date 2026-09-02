@@ -69,35 +69,6 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
     }
   };
   
-  const toggleAlarmSound = async () => {
-    const newConfig = {
-      ...DEFAULT_USER_CONFIG,
-      ...(user.config || {}),
-      alarmSoundEnabled: !user.config?.alarmSoundEnabled
-    };
-
-    const updatedUser = {
-      ...user,
-      config: newConfig
-    };
-
-    try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ config: newConfig })
-        .eq('id', user.id);
-
-      if (profileError) {
-        console.error('Error updating alarm settings:', profileError);
-        setError(user.language === 'fr' ? 'Erreur lors de la mise à jour des paramètres.' : 'Error updating settings.');
-      } else {
-        onUpdateUser(updatedUser);
-      }
-    } catch (err) {
-      console.error('Async error updating alarm settings:', err);
-    }
-  };
-
   return (
     <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
        <div className="mb-10">
@@ -260,3 +231,4 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
 };
 
 export default Settings;
+

@@ -12,9 +12,7 @@ class MQTTService {
     private onStatusCallbacks: Set<StatusCallback> = new Set();
     private topicState: Record<string, any> = {};
     private topicTimestamps: Record<string, number> = {};
-    private monitoredWidgets: Widget[] = [];
     private allWidgets: Widget[] = [];
-    private activeAlarmWidgets: Set<string> = new Set();
     private telemetryBuffer: Array<{ widget_id: string; variable_name: string; value: number; unit?: string; created_at: string }> = [];
     private lastStoredTimestamps: Map<string, number> = new Map();
     private flushTimer: ReturnType<typeof setInterval> | null = null;
@@ -393,9 +391,6 @@ class MQTTService {
             this.topicTimestamps[topic] = Date.now();
             this.saveStateToStorage();
 
-            // Check for alarms
-            this.checkThresholds(topic, payload);
-
             // Persist numeric telemetry to database for historical charts
             this.persistTelemetry(topic, payload);
 
@@ -538,73 +533,9 @@ class MQTTService {
 
     setMonitoredWidgets(widgets: Widget[]) {
         this.allWidgets = widgets;
-        this.monitoredWidgets = widgets.filter(w => w.alarmEnabled);
         this.startFlushTimer();
     }
 
-    private async checkThresholds(topic: string, payload: any) {
-        if (!this.monitoredWidgets.length) return;
-
-        const widgetsOnTopic = this.monitoredWidgets.filter(w => w.mqttTopic === topic);
-
-        for (const widget of widgetsOnTopic) {
-            const value = payload[widget.variableName];
-            if (value === undefined || value === null || typeof value !== 'number') continue;
-
-            let alarmType: 'LOW' | 'HIGH' | null = null;
-            let thresholdValue: number = 0;
-
-            if (widget.alarmMax !== undefined && value > widget.alarmMax) {
-                alarmType = 'HIGH';
-                thresholdValue = widget.alarmMax;
-            } else if (widget.alarmMin !== undefined && value < widget.alarmMin) {
-                alarmType = 'LOW';
-                thresholdValue = widget.alarmMin;
-            }
-
-            if (alarmType) {
-                if (!this.activeAlarmWidgets.has(widget.id)) {
-                    this.activeAlarmWidgets.add(widget.id);
-                    await this.triggerAlarm(widget, value, thresholdValue, alarmType);
-                }
-            } else {
-                if (this.activeAlarmWidgets.has(widget.id)) {
-                    this.activeAlarmWidgets.delete(widget.id);
-                    await this.resolveAlarm(widget.id);
-                }
-            }
-        }
-    }
-
-    private async triggerAlarm(widget: Widget, value: number, threshold: number, type: 'LOW' | 'HIGH') {
-        // console.log(`ALARM TRIGGERED on ${widget.name}: ${value} (Threshold: ${threshold} ${type})`);
-        try {
-            await supabase.from('alarms').insert({
-                user_id: widget.userId,
-                widget_id: widget.id,
-                variable_name: widget.variableName,
-                trigger_value: value,
-                threshold_value: threshold,
-                alarm_type: type,
-                severity: 'MEDIUM',
-                status: 'ACTIVE'
-            });
-        } catch (err) {
-            console.error('Failed to create alarm in DB:', err);
-        }
-    }
-
-    private async resolveAlarm(widgetId: string) {
-        // console.log(`Alarm resolved for widget ${widgetId}`);
-        try {
-            await supabase.from('alarms')
-                .update({ status: 'RESOLVED', resolved_at: new Date().toISOString() })
-                .eq('widget_id', widgetId)
-                .eq('status', 'ACTIVE');
-        } catch (err) {
-            console.error('Failed to resolve alarm in DB:', err);
-        }
-    }
 }
 
 export const mqttService = new MQTTService();

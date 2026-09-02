@@ -1342,7 +1342,6 @@ interface WidgetRendererProps {
     isPreview?: boolean;  // true when in admin designer preview mode
     currentData?: any;    // The current data for this widget (extracted from MQTT)
     historyData?: any[];  // Historical data for charts (historical view)
-    isAlarm?: boolean;    // true if the current value is out of bounds
     timeRange?: string;
     onRangeChange?: (range: string) => void;
     isOffline?: boolean;
@@ -1355,7 +1354,6 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     isPreview = false,
     currentData,
     historyData,
-    isAlarm = false,
     timeRange,
     onRangeChange,
     isOffline = false
@@ -1429,16 +1427,14 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     };
 
     return (
-        <div className={`relative h-full transition-all duration-500 animate-in fade-in slide-in-from-bottom-2 ${isAlarm ? 'ring-2 ring-red-500/40 rounded-2xl ring-offset-1 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : ''} ${isOffline ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
-            {isAlarm && (
-                <div className="absolute -top-2 -right-2 z-20 bg-red-600 text-white p-1.5 rounded-full shadow-lg animate-bounce border-2 border-white">
-                    <AlertTriangle size={14} />
-                </div>
-            )}
+        <div className={`relative h-full transition-all duration-500 animate-in fade-in slide-in-from-bottom-2 ${isOffline ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
             {renderWidget()}
         </div>
     );
 };
 
 export default WidgetRenderer;
+
+
+
 

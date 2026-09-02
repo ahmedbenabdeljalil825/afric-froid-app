@@ -266,10 +266,6 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
           {widgets.map((widget, index) => {
             const val = liveData[widget.variableName];
-            const isAlarm = widget.alarmEnabled && val !== undefined && (
-              (widget.alarmMin !== undefined && val < widget.alarmMin) ||
-              (widget.alarmMax !== undefined && val > widget.alarmMax)
-            );
 
             const range = timeRanges[widget.id] || '1';
             const hours = parseInt(range, 10) || 1;
@@ -292,7 +288,6 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
                   historyData={
                     widget.widgetType === ReadingWidgetType.LINE_CHART ? chartSeries : undefined
                   }
-                  isAlarm={isAlarm}
                   isOffline={mqttStatus !== 'connected'}
                   timeRange={range}
                   onRangeChange={(r) => setTimeRanges((prev) => ({ ...prev, [widget.id]: r }))}
