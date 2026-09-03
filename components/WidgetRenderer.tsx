@@ -888,7 +888,7 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
             const raw = draftIsOn ? config.onPayload : config.offPayload;
             try { targetPayload = JSON.parse(raw); } catch (e) { targetPayload = raw; }
         }
-        mqttService.publishVariableUpdate(pubTopic, pubVar, targetPayload);
+        mqttService.publishVariableUpdate(pubTopic, pubVar, targetPayload, widget.qos || 0, widget.retain || false);
     };
 
     return (

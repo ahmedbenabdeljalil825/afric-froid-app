@@ -180,24 +180,30 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
 
         setLiveData(initialLiveData);
 
-        // Subscribe to all unique topics used by widgets
-        const uniqueTopics = new Set<string>();
+        // Subscribe to all unique topics and resolve maximum QoS for each
+        const uniqueTopicsMap = new Map<string, number>();
+        
+        const addTopic = (topic: string, qos: number) => {
+            if (!uniqueTopicsMap.has(topic) || uniqueTopicsMap.get(topic)! < qos) {
+                uniqueTopicsMap.set(topic, qos);
+            }
+        };
+
         fetchedWidgets.forEach(w => {
-            uniqueTopics.add(w.mqttTopic);
+            addTopic(w.mqttTopic, w.qos || 0);
             if ((w.config as any)?.readTopic) {
-                uniqueTopics.add((w.config as any).readTopic);
+                addTopic((w.config as any).readTopic, (w.config as any)?.readQos || 0);
             }
         });
 
-        // Also add global telemetry if not in widgets
         if (user.mqttConfig?.topics.telemetry) {
-          uniqueTopics.add(user.mqttConfig.topics.telemetry);
+          addTopic(user.mqttConfig.topics.telemetry, 0);
         }
 
-        uniqueTopics.forEach(topic => {
+        uniqueTopicsMap.forEach((qos, topic) => {
           const unsub = mqttService.subscribe((data: any) => {
             setLiveData(prev => ({ ...prev, ...data }));
-          }, topic);
+          }, topic, qos as 0|1|2);
           activeSubscriptions.push(unsub);
         });
 

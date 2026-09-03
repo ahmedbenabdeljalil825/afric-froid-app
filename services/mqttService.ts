@@ -342,7 +342,8 @@ class MQTTService {
         this.topicCallbacks.forEach((_cbs, topic) => topics.add(topic));
 
         topics.forEach((topic) => {
-            this.client!.subscribe(topic, (err: Error | null) => {
+            const qos = this.topicQos.get(topic) || 0;
+            this.client!.subscribe(topic, { qos }, (err: Error | null) => {
                 if (err) console.error('[MQTT] Subscribe error:', topic, err);
             });
         });
@@ -350,13 +351,19 @@ class MQTTService {
 
     // Allow dynamic subscription for widgets with custom topics
     // Supports multiple simultaneous subscribers per topic
-    subscribe(callback: MessageCallback, topic?: string): () => void {
+    subscribe(callback: MessageCallback, topic?: string, qos: 0 | 1 | 2 = 0): () => void {
         if (!this.client || !this.config) return () => { };
 
         const targetTopic = topic || this.config.topics.telemetry;
 
         // Subscribe the MQTT client to the topic if not already subscribed
-        this.client.subscribe(targetTopic, (err: Error | null) => {
+        const currentQos = this.topicQos.get(targetTopic) || 0;
+        if (qos > currentQos || !this.topicQos.has(targetTopic)) {
+            this.topicQos.set(targetTopic, qos);
+        }
+        
+        // Subscribe the MQTT client to the topic if not already subscribed
+        this.client.subscribe(targetTopic, { qos: this.topicQos.get(targetTopic) }, (err: Error | null) => {
             if (err) console.error('Dynamic subscription error:', err);
         });
 
@@ -459,7 +466,7 @@ class MQTTService {
      * Read-Modify-Write: Reads the latest state for the topic, 
      * updates one variable, and publishes the full JSON back.
      */
-    publishVariableUpdate(topic: string, variableName: string, newValue: any) {
+    publishVariableUpdate(topic: string, variableName: string, newValue: any, qos: 0 | 1 | 2 = 0, retain: boolean = false) {
         if (!this.client || !this.client.connected) {
             console.error('Cannot publish: MQTT client not connected');
             return;
@@ -473,7 +480,7 @@ class MQTTService {
 
         // 3. Write
         const payload = JSON.stringify(newState);
-        this.client.publish(topic, payload, { qos: 0, retain: false }, (err: Error | undefined) => {
+        this.client.publish(topic, payload, { qos, retain }, (err: Error | undefined) => {
             if (err) {
                 console.error('Publish error:', err);
             } else {
