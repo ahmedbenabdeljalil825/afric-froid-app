@@ -579,42 +579,39 @@ const AdminUserDesigner: React.FC = () => {
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 mb-2">Action</label>
-                                        <div className="flex gap-4">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="mqttAction"
-                                                    checked={widgetForm.mqttAction === 'SUBSCRIBE'}
-                                                    onChange={() => setWidgetForm({ ...widgetForm, mqttAction: 'SUBSCRIBE' })}
-                                                    className="text-frost-600"
-                                                />
-                                                <span className="text-sm">Subscribe Only</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="mqttAction"
-                                                    checked={widgetForm.mqttAction === 'PUBLISH'}
-                                                    onChange={() => setWidgetForm({ ...widgetForm, mqttAction: 'PUBLISH' })}
-                                                    className="text-frost-600"
-                                                />
-                                                <span className="text-sm">Publish Only</span>
-                                            </label>
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="radio"
-                                                    name="mqttAction"
-                                                    checked={widgetForm.mqttAction === 'SYNC'}
-                                                    onChange={() => setWidgetForm({ ...widgetForm, mqttAction: 'SYNC' })}
-                                                    className="text-frost-600"
-                                                />
-                                                <span className="text-sm">Sync (Both)</span>
-                                            </label>
+                                                                        {widgetForm.category === WidgetCategory.CONTROLLING && (
+                                        <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 mb-4">
+                                            <h5 className="text-xs font-bold text-slate-500 uppercase mb-3">Write (Publish) Configuration</h5>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                                                        Publish Topic
+                                                        <InfoTooltip title="Publish Topic" content="Optional. If the widget writes to a different topic than it reads from." />
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none font-mono text-sm"
+                                                        placeholder="Leave blank to use the same as Read Topic"
+                                                        value={widgetForm.config?.publishTopic || ''}
+                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...widgetForm.config, publishTopic: e.target.value } })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                                                        Publish Variable Name
+                                                        <InfoTooltip title="Publish Variable Name" content="Optional. If the widget writes to a different variable than it reads." />
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none font-mono text-sm"
+                                                        placeholder="Leave blank to use the same as Read Variable"
+                                                        value={widgetForm.config?.publishVariableName || ''}
+                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...widgetForm.config, publishVariableName: e.target.value } })}
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-
+                                    )}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
@@ -1052,6 +1049,8 @@ const AdminUserDesigner: React.FC = () => {
 };
 
 export default AdminUserDesigner;
+
+
 
 
 

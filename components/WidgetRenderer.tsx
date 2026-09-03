@@ -802,85 +802,54 @@ const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; curr
 // ══════════════════════════════════════════════════════════
 
 // ── Button Widget ──
-const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview: boolean; currentValue?: any; language: Language }> = ({ widget, colorIndex, isPreview, currentValue, language }) => {
+// Universal helper to get the publish topic and variable
+const getPublishTopic = (widget: Widget) => (widget.config as any)?.publishTopic || widget.mqttTopic;
+const getPublishVar = (widget: Widget) => (widget.config as any)?.publishVariableName || widget.variableName;
+
+const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview?: boolean; currentValue?: any; language: Language }> = ({ widget, colorIndex, isPreview, currentValue, language }) => {
     const color = getColor(colorIndex);
-    const [pressed, setPressed] = useState(false);
-    const [confirming, setConfirming] = useState(false);
-    const confirmTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-    const config = widget.config as ButtonConfig;
     const t = TRANSLATIONS[language];
+    const pubTopic = getPublishTopic(widget);
+    const pubVar = getPublishVar(widget);
 
-    useEffect(() => {
-        return () => { if (confirmTimer.current) clearTimeout(confirmTimer.current); };
-    }, []);
-
-    const handleAction = () => {
-        if (!confirming) {
-            setConfirming(true);
-            confirmTimer.current = setTimeout(() => setConfirming(false), 3000);
-            return;
-        }
-        setConfirming(false);
-        if (confirmTimer.current) clearTimeout(confirmTimer.current);
-
-        if (isPreview) {
-            setPressed(true);
-            setTimeout(() => setPressed(false), 300);
-            return;
-        }
-
-        if (widget.variableName) {
-            mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, config?.payload || 'TRIGGER');
-        } else {
-            mqttService.publishRaw(widget.mqttTopic, config?.payload || 'TRIGGER');
-        }
-
-        setPressed(true);
-        setTimeout(() => setPressed(false), 300);
+    const handlePress = () => {
+        if (isPreview) return;
+        const config = widget.config as any;
+        let payload = config?.payload || 'PRESS';
+        try { payload = JSON.parse(payload); } catch (e) { }
+        mqttService.publishVariableUpdate(pubTopic, pubVar, payload);
     };
 
     return (
-        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
-            <div className="flex items-center justify-between mb-2">
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col justify-between group">
+            <div className="flex items-center gap-2 mb-4">
+                <Zap size={16} className={color.text} />
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
-                    title={t.configuration}
-                    content={`${t.widgetConfigTopic}: ${widget.mqttTopic}\n${t.widgetConfigAction}: ${widget.mqttAction}`}
-                />
             </div>
-            <p className="text-[10px] text-slate-500 font-black font-mono mb-6 uppercase tracking-tighter opacity-100">
-                {widget.dataLabel || widget.variableName}
-            </p>
-            <div className="flex-1 flex items-center justify-center">
-                <button
-                    onClick={handleAction}
-                    className={`w-full py-5 rounded-2xl font-black text-white text-xs tracking-[0.2em] shadow-2xl hover:shadow-3xl transform transition-all duration-300 ${pressed ? 'scale-95 brightness-90' : 'scale-100 hover:-translate-y-1'} ${confirming ? 'animate-pulse' : ''}`}
-                    style={{ backgroundColor: confirming ? '#f59e0b' : color.primary }}
-                >
-                    {confirming ? null : <Send size={14} className="inline mr-3 -translate-y-0.5" />}
-                    {confirming ? 'CONFIRM ?' : (config?.label || t.sendCommand).toUpperCase()}
-                </button>
+            
+            <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 flex items-center justify-between mb-4">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Actual State</span>
+                <span className="text-xs font-black text-[#002060]">{currentValue !== undefined ? String(currentValue) : '--'}</span>
             </div>
-            <p className="text-[10px] text-slate-600 text-center mt-6 font-black font-mono tracking-tighter opacity-100 italic">
-                → {widget.mqttTopic}
-            </p>
+
+            <button
+                onClick={handlePress}
+                className={"w-full py-4 px-6 rounded-xl font-bold uppercase tracking-wider text-sm transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg active:scale-95 active:shadow-inner text-white " + color.gradient}
+            >
+                {(widget.config as ButtonConfig).buttonText || t.activate}
+            </button>
         </div>
     );
 };
 
-// ── Toggle Widget ──
 const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
-    const [isOn, setIsOn] = useState(false);
-    const [locked, setLocked] = useState(false);
-    const [confirming, setConfirming] = useState(false);
-    const lockTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-    const confirmTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const color = getColor(colorIndex);
     const t = TRANSLATIONS[language];
+    const pubTopic = getPublishTopic(widget);
+    const pubVar = getPublishVar(widget);
 
     const parseValue = (val: any): boolean => {
         if (val === undefined || val === null) return false;
-        
         const config = widget.config as any;
         if (config?.onPayload !== undefined && config?.offPayload !== undefined && config.onPayload !== '' && config.offPayload !== '') {
             try {
@@ -891,521 +860,310 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                 if (String(val) === String(config.offPayload)) return false;
             }
         }
-        
         const s = String(val).toLowerCase();
-        return s === 'true' || s === '1' || s === 'on' || s === 'active' || s === 'running' || s === 'override_active';
+        return s === 'true' || s === '1' || s === 'on' || s === 'active' || s === 'running';
     };
 
-    // Sync with live MQTT data — but only when NOT locked (user just clicked)
+    const actualIsOn = parseValue(currentValue);
+    const [draftIsOn, setDraftIsOn] = useState(actualIsOn);
+
     useEffect(() => {
-        if (locked) return;
-        if (currentValue !== undefined) {
-            setIsOn(parseValue(currentValue));
-        }
-    }, [currentValue, locked]);
+        setDraftIsOn(actualIsOn);
+    }, [actualIsOn]);
 
-    // Cleanup timer on unmount
-    useEffect(() => {
-        return () => { 
-            if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
-            if (confirmTimer.current) clearTimeout(confirmTimer.current);
-        };
-    }, []);
-
-    const handleToggle = () => {
-        if (!confirming) {
-            setConfirming(true);
-            confirmTimer.current = setTimeout(() => setConfirming(false), 3000);
-            return;
-        }
-        setConfirming(false);
-        if (confirmTimer.current) clearTimeout(confirmTimer.current);
-
-        const nextState = !isOn;
-        setIsOn(nextState);
-        // Lock for 2 s so MQTT subscription echo cannot revert the optimistic state
-        setLocked(true);
-        if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
-        lockTimerRef.current = setTimeout(() => {
-            setLocked(false);
-        }, 2000);
-        
-        let targetPayload: any = nextState;
+    const handleSubmit = () => {
+        let targetPayload: any = draftIsOn;
         const config = widget.config as any;
         if (config?.onPayload !== undefined && config?.offPayload !== undefined && config.onPayload !== '' && config.offPayload !== '') {
-            const raw = nextState ? config.onPayload : config.offPayload;
-            try {
-                targetPayload = JSON.parse(raw);
-            } catch (e) {
-                targetPayload = raw;
-            }
+            const raw = draftIsOn ? config.onPayload : config.offPayload;
+            try { targetPayload = JSON.parse(raw); } catch (e) { targetPayload = raw; }
         }
-        
-        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, targetPayload);
+        mqttService.publishVariableUpdate(pubTopic, pubVar, targetPayload);
     };
 
     return (
-        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
-            <div className="flex items-center gap-2 mb-1">
-                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
-                    title={t.configuration}
-                    content={`${t.widgetConfigTopic}: ${widget.mqttTopic}`}
-                />
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                    <ToggleLeft size={16} className={color.text} />
+                    <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
+                </div>
+                <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + (actualIsOn ? color.gradient : 'bg-slate-300')}>
+                    ACTUAL: {actualIsOn ? t.on.toUpperCase() : t.off.toUpperCase()}
+                </div>
             </div>
-            <p className="text-[10px] text-slate-500 font-black font-mono mb-6 uppercase tracking-tighter opacity-100">
-                {widget.dataLabel || widget.variableName}
-            </p>
 
-            <button
-                onClick={handleToggle}
-                className="relative focus:outline-none mb-4 group transform transition-transform duration-500 hover:scale-110 active:scale-95"
-                title="Toggle switch"
-            >
-                {isOn ? (
-                    <ToggleRight size={72} className={`${color.text} transition-colors drop-shadow-2xl`} />
-                ) : (
-                    <ToggleLeft size={72} className="text-slate-200 group-hover:text-slate-300 transition-colors" />
-                )}
-            </button>
-
-            <div 
-                className={`px-6 py-2 rounded-full text-xs font-black tracking-[0.2em] transition-all duration-500 ${confirming ? 'bg-amber-500 text-white shadow-lg animate-pulse' : isOn ? 'text-white shadow-lg' : 'bg-slate-100 text-slate-400'}`}
-                style={(!confirming && isOn) ? { backgroundColor: color.primary } : undefined}
-            >
-                {confirming ? 'CONFIRM ?' : isOn ? t.on.toUpperCase() : t.off.toUpperCase()}
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 mt-2">
+                <button
+                    onClick={() => setDraftIsOn(!draftIsOn)}
+                    className="relative focus:outline-none transform transition-transform hover:scale-105 active:scale-95"
+                >
+                    {draftIsOn ? (
+                        <ToggleRight size={56} className={color.text + " drop-shadow-md"} />
+                    ) : (
+                        <ToggleLeft size={56} className="text-slate-200" />
+                    )}
+                </button>
+                <button onClick={handleSubmit} className="flex items-center gap-2 px-6 py-2 rounded-full bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-colors">
+                    <Send size={12} /> Send Command
+                </button>
             </div>
-            <p className="text-[10px] text-slate-400 mt-6 font-black font-mono tracking-tighter opacity-50 italic">
-                → {widget.mqttTopic}
-            </p>
         </div>
     );
 };
 
-// ── Slider Widget ──
 const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
-    const [value, setValue] = useState(50);
     const color = getColor(colorIndex);
-    const config = widget.config as GaugeConfig;
-    const t = TRANSLATIONS[language];
-    const min = config?.min ?? 0;
-    const max = config?.max ?? 100;
-    const sliderRef = React.useRef<HTMLInputElement>(null);
+    const [draftVal, setDraftVal] = useState<number>(0);
+    const pubTopic = getPublishTopic(widget);
+    const pubVar = getPublishVar(widget);
 
-    // Sync with live data
     useEffect(() => {
         if (currentValue !== undefined && !isNaN(Number(currentValue))) {
-            setValue(Number(currentValue));
+            setDraftVal(Number(currentValue));
         }
     }, [currentValue]);
 
-    useEffect(() => {
-        if (sliderRef.current) {
-            const pct = ((value - min) / (max - min)) * 100;
-            sliderRef.current.style.background = `linear-gradient(to right, ${color.primary} 0%, ${color.primary} ${pct}%, #f1f5f9 ${pct}%, #f1f5f9 100%)`;
-        }
-    }, [value, min, max, color.primary]);
-
-    const handlePublish = (val: number) => {
-        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, val);
+    const handleSubmit = () => {
+        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
     };
+
+    const config = widget.config as any;
+    const min = config?.min ?? 0;
+    const max = config?.max ?? 100;
 
     return (
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
-            <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
-                    title={t.configuration}
-                    content={`${t.widgetConfigTopic}: ${widget.mqttTopic}`}
-                />
-            </div>
-            <p className="text-[10px] text-slate-400 font-black font-mono mb-4 uppercase tracking-tighter opacity-70">
-                {widget.dataLabel || widget.variableName}
-            </p>
-
-            <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                <div className="text-4xl font-black text-slate-900 leading-none transform transition-transform duration-500 group-hover:scale-110 tracking-tighter">{value}</div>
-
-                <div className="w-full relative mt-4">
-                    <input
-                        ref={sliderRef}
-                        type="range"
-                        min={min}
-                        max={max}
-                        value={value}
-                        onChange={(e) => setValue(Number(e.target.value))}
-                        onMouseUp={(e) => handlePublish(Number((e.target as HTMLInputElement).value))}
-                        onTouchEnd={(e) => handlePublish(Number((e.target as HTMLInputElement).value))}
-                        className="w-full h-3 rounded-full appearance-none cursor-pointer shadow-inner"
-                        title="Slider control"
-                    />
-                </div>
-
-                <div className="flex justify-between w-full text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
-                    <span>{min}</span>
-                    <span>{max}</span>
-                </div>
-            </div>
-            <p className="text-[10px] text-slate-600 text-center mt-6 font-black font-mono tracking-tighter opacity-100 italic">
-                → {widget.mqttTopic}
-            </p>
-        </div>
-    );
-};
-
-// ── Text Input Widget ──
-const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
-    const [text, setText] = useState('');
-    const color = getColor(colorIndex);
-    const t = TRANSLATIONS[language];
-
-    // Sync with live data
-    useEffect(() => {
-        if (currentValue !== undefined) {
-            setText(String(currentValue));
-        }
-    }, [currentValue]);
-
-    const handlePublish = () => {
-        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, text);
-    };
-
-    return (
-        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                    <Type size={16} className={color.text} />
-                    <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
+                    <SlidersHorizontal size={16} className={color.text} />
+                    <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
-                <InfoTooltip
-                    title={t.configuration}
-                    content={`${t.widgetConfigTopic}: ${widget.mqttTopic}`}
-                />
+                <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + color.gradient}>
+                    ACTUAL: {currentValue !== undefined ? Number(currentValue).toFixed(1) : '--'}
+                </div>
             </div>
-            <p className="text-[10px] text-slate-500 font-black font-mono mb-6 uppercase tracking-tighter opacity-100">
-                {widget.dataLabel || widget.variableName}
-            </p>
 
             <div className="flex-1 flex flex-col justify-center gap-4">
                 <input
-                    type="text"
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    placeholder={`${t.enterValue}...`}
-                    className="w-full px-5 py-4 rounded-2xl bg-white/50 border-2 border-slate-100 focus:border-[#002060] focus:ring-4 focus:ring-slate-100 outline-none text-sm font-black transition-all duration-300 placeholder:text-slate-300 text-slate-900 shadow-inner"
+                    type="range"
+                    min={min}
+                    max={max}
+                    step={config?.step || 1}
+                    value={draftVal}
+                    onChange={(e) => setDraftVal(Number(e.target.value))}
+                    className="w-full accent-slate-900 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                 />
-                <button
-                    onClick={handlePublish}
-                    className="w-full py-4 rounded-2xl font-black text-white text-xs tracking-[0.2em] shadow-2xl hover:shadow-3xl transform transition-all duration-300 hover:-translate-y-1 active:scale-95"
-                    style={{ backgroundColor: color.primary }}
-                >
-                    <Send size={14} className="inline mr-3 -translate-y-0.5" />
-                    {t.publish.toUpperCase()}
-                </button>
+                <div className="flex justify-between items-center w-full">
+                    <span className="text-xs font-bold text-slate-500">{draftVal}</span>
+                    <button onClick={handleSubmit} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800">
+                        <Send size={12} /> Send
+                    </button>
+                </div>
             </div>
-            <p className="text-[10px] text-slate-600 text-center mt-6 font-black font-mono tracking-tighter opacity-100 italic">
-                → {widget.mqttTopic}
-            </p>
         </div>
     );
 };
 
-// ── Number Input Widget ──
-const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
-    const [num, setNum] = useState(0);
+const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
-    const t = TRANSLATIONS[language];
+    const [draftVal, setDraftVal] = useState('');
+    const pubTopic = getPublishTopic(widget);
+    const pubVar = getPublishVar(widget);
 
-    // Sync with live data
     useEffect(() => {
-        if (currentValue !== undefined && !isNaN(Number(currentValue))) {
-            setNum(Number(currentValue));
+        if (currentValue !== undefined) {
+            setDraftVal(String(currentValue));
         }
     }, [currentValue]);
 
-    const handlePublish = () => {
-        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, num);
+    const handleSubmit = () => {
+        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
     };
 
     return (
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                    <Hash size={16} className={color.text} />
-                    <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
+                    <Type size={16} className={color.text} />
+                    <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
-                <InfoTooltip
-                    title={t.configuration}
-                    content={`${t.widgetConfigTopic}: ${widget.mqttTopic}`}
-                />
-            </div>
-            <p className="text-[10px] text-slate-500 font-black font-mono mb-6 uppercase tracking-tighter opacity-100">
-                {widget.dataLabel || widget.variableName}
-            </p>
-
-            <div className="flex-1 flex flex-col justify-center gap-6">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => {
-                            const n = num - 1;
-                            setNum(n);
-                            mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, n);
-                        }}
-                        className="w-14 h-14 rounded-2xl bg-white/50 border-2 border-slate-100 hover:border-[#002060] hover:bg-white text-[#002060] transition-all duration-300 text-2xl font-black shadow-lg flex items-center justify-center active:scale-90"
-                    >
-                        −
-                    </button>
-                    <input
-                        type="number"
-                        value={num}
-                        onChange={(e) => setNum(Number(e.target.value))}
-                        onBlur={handlePublish}
-                        onKeyDown={(e) => e.key === 'Enter' && handlePublish()}
-                        title="Number value"
-                        className="flex-1 text-center px-4 py-4 rounded-2xl bg-white/50 border-2 border-slate-100 outline-none text-2xl font-black text-slate-900 shadow-inner focus:border-[#002060] transition-all"
-                    />
-                    <button
-                        onClick={() => {
-                            const n = num + 1;
-                            setNum(n);
-                            mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, n);
-                        }}
-                        className="w-14 h-14 rounded-2xl bg-white/50 border-2 border-slate-100 hover:border-[#002060] hover:bg-white text-[#002060] transition-all duration-300 text-2xl font-black shadow-lg flex items-center justify-center active:scale-90"
-                    >
-                        +
-                    </button>
+                <div className="text-[10px] text-slate-400 font-bold max-w-[100px] truncate" title={String(currentValue)}>
+                    Actual: {currentValue !== undefined ? String(currentValue) : '--'}
                 </div>
             </div>
-            <p className="text-[10px] text-slate-600 text-center mt-6 font-black font-mono tracking-tighter opacity-100 italic">
-                → {widget.mqttTopic}
-            </p>
+
+            <div className="flex gap-2">
+                <input
+                    type="text"
+                    value={draftVal}
+                    onChange={(e) => setDraftVal(e.target.value)}
+                    className="flex-1 w-full px-4 py-2 text-sm rounded-xl border border-slate-200 focus:border-slate-500 outline-none font-medium"
+                    placeholder="Enter text..."
+                />
+                <button onClick={handleSubmit} className={"px-4 rounded-xl text-white flex items-center justify-center " + color.gradient}>
+                    <Send size={16} />
+                </button>
+            </div>
         </div>
     );
 };
-// ── Color Picker Widget ──
-const ColorPickerWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
-    const [colorValue, setColorValue] = useState('#002060');
-    const t = TRANSLATIONS[language];
-    const bgRef = React.useRef<HTMLDivElement>(null);
+
+const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const color = getColor(colorIndex);
+    const [draftVal, setDraftVal] = useState<number>(0);
+    const pubTopic = getPublishTopic(widget);
+    const pubVar = getPublishVar(widget);
 
     useEffect(() => {
-        if (bgRef.current) {
-            bgRef.current.style.backgroundColor = colorValue;
-        }
-    }, [colorValue]);
-
-    return (
-        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
-            <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
-                    title={t.configuration}
-                    content={`${t.widgetConfigTopic}: ${widget.mqttTopic}`}
-                />
-            </div>
-            <p className="text-[10px] text-slate-600 font-black font-mono mb-6 uppercase tracking-tighter opacity-100">
-                {widget.mqttTopic}
-            </p>
-            <div className="flex-1 flex flex-col items-center justify-center gap-6">
-                <div
-                    ref={bgRef}
-                    className="w-24 h-24 rounded-[2rem] shadow-2xl border-4 border-white transition-all duration-500 transform group-hover:scale-110"
-                />
-                <input
-                    type="color"
-                    title="Choose color"
-                    value={colorValue}
-                    onChange={(e) => {
-                        setColorValue(e.target.value);
-                        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, e.target.value);
-                    }}
-                    className="w-full h-14 rounded-2xl cursor-pointer border-none bg-white/50 p-1 shadow-inner overflow-hidden"
-                />
-            </div>
-        </div>
-    );
-};
-
-// ── Time Picker Widget ──
-const TimePickerWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
-    const [time, setTime] = useState('12:00');
-    const t = TRANSLATIONS[language];
-
-    return (
-        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
-            <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
-                    title={t.configuration}
-                    content={`${t.widgetConfigTopic}: ${widget.mqttTopic}`}
-                />
-            </div>
-            <p className="text-[10px] text-slate-600 font-black font-mono mb-6 uppercase tracking-tighter opacity-100">
-                {widget.mqttTopic}
-            </p>
-            <div className="flex-1 flex items-center justify-center">
-                <input
-                    type="time"
-                    title="Set time"
-                    value={time}
-                    onChange={(e) => {
-                        setTime(e.target.value);
-                        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, e.target.value);
-                    }}
-                    className="px-8 py-4 rounded-2xl bg-white/50 border-2 border-slate-100 font-black text-2xl text-[#002060] outline-none focus:border-[#002060] focus:ring-4 focus:ring-slate-100 transition-all shadow-inner"
-                />
-            </div>
-        </div>
-    );
-};
-
-// ── Combo Box Widget ──
-const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
-    const config = widget.config as ComboBoxConfig;
-    const options = config?.options && config.options.length > 0 ? config.options : [
-        { label: 'Option 1', value: '1' },
-        { label: 'Option 2', value: '2' },
-        { label: 'Option 3', value: '3' }
-    ];
-    const [selected, setSelected] = useState(options[0].value);
-    const t = TRANSLATIONS[language];
-
-    // Sync with live data
-    useEffect(() => {
-        if (currentValue !== undefined) {
-             setSelected(String(currentValue));
+        if (currentValue !== undefined && !isNaN(Number(currentValue))) {
+            setDraftVal(Number(currentValue));
         }
     }, [currentValue]);
 
+    const handleSubmit = () => {
+        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
+    };
+
     return (
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
-            <div className="flex items-center justify-between mb-1">
-                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
-                    title={t.configuration}
-                    content={`${t.widgetConfigTopic}: ${widget.mqttTopic}`}
+            <div className="flex items-center gap-2 mb-4">
+                <Hash size={16} className={color.text} />
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
+            </div>
+
+            <div className="bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex items-center justify-between mb-4">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Actual</span>
+                <span className="text-sm font-black text-[#002060]">{currentValue !== undefined ? Number(currentValue) : '--'}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <button onClick={() => setDraftVal(draftVal - 1)} className="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl font-bold hover:bg-slate-200">-</button>
+                <input
+                    type="number"
+                    value={draftVal}
+                    onChange={(e) => setDraftVal(Number(e.target.value))}
+                    className="flex-1 w-full px-2 py-2 text-center text-lg font-black rounded-xl border border-slate-200 outline-none"
                 />
+                <button onClick={() => setDraftVal(draftVal + 1)} className="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl font-bold hover:bg-slate-200">+</button>
             </div>
-            <p className="text-[10px] text-slate-600 font-black font-mono mb-6 uppercase tracking-tighter opacity-100">
-                {widget.mqttTopic}
-            </p>
-            <div className="flex-1 flex items-center justify-center">
-                <select
-                    title="Select option"
-                    value={selected}
-                    onChange={(e) => {
-                        setSelected(e.target.value);
-                        mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, e.target.value);
-                    }}
-                    className="w-full px-6 py-4 rounded-2xl bg-white/50 border-2 border-slate-100 font-black text-slate-900 outline-none focus:border-[#002060] focus:ring-4 focus:ring-slate-100 transition-all shadow-inner appearance-none relative"
-                >
-                    {options.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                </select>
-            </div>
+            <button onClick={handleSubmit} className="mt-4 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800">
+                <Send size={12} /> Send Update
+            </button>
         </div>
     );
 };
 
-// ── Radio Buttons Widget ──
-const RadioButtonOption: React.FC<{
-    opt: string,
-    id: string,
-    selected: boolean,
-    primaryColor: string,
-    borderClass: string,
-    onSelect: () => void
-}> = ({ opt, id, selected, primaryColor, borderClass, onSelect }) => {
-    const dotRef = React.useRef<HTMLDivElement>(null);
+const ColorPickerWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
+    return (
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 h-full flex flex-col items-center justify-center text-slate-500">
+            <Info size={32} className="mb-2 opacity-30" />
+            <span className="text-xs font-bold uppercase tracking-widest">Color Picker (Pending Split UI)</span>
+        </div>
+    );
+};
+
+const TimePickerWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
+    return (
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 h-full flex flex-col items-center justify-center text-slate-500">
+            <Clock size={32} className="mb-2 opacity-30" />
+            <span className="text-xs font-bold uppercase tracking-widest">Time Picker (Pending Split UI)</span>
+        </div>
+    );
+};
+
+const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const color = getColor(colorIndex);
+    const [draftVal, setDraftVal] = useState<string>('');
+    const pubTopic = getPublishTopic(widget);
+    const pubVar = getPublishVar(widget);
+    const config = widget.config as ComboBoxConfig;
 
     useEffect(() => {
-        if (dotRef.current) {
-            dotRef.current.style.backgroundColor = primaryColor;
+        if (currentValue !== undefined) {
+            setDraftVal(String(currentValue));
         }
-    }, [primaryColor, selected]);
+    }, [currentValue]);
+
+    const handleSubmit = () => {
+        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
+    };
 
     return (
-        <label className="flex items-center gap-4 cursor-pointer group">
-            <input
-                type="radio"
-                name={`radio-${id}`}
-                checked={selected}
-                onChange={onSelect}
-                className="hidden"
-            />
-            <div
-                className={`w-7 h-7 rounded-full border-4 flex items-center justify-center transition-all duration-500 ${selected ? `${borderClass} scale-110 shadow-lg` : 'border-slate-100 bg-slate-50'}`}
-            >
-                {selected && <div ref={dotRef} className="w-3.5 h-3.5 rounded-full shadow-inner animate-in fade-in zoom-in duration-500" />}
+        <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
+            <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
+                <div className="text-[10px] text-slate-400 font-bold max-w-[100px] truncate" title={String(currentValue)}>
+                    Actual: {currentValue !== undefined ? String(currentValue) : '--'}
+                </div>
             </div>
-            <span className={`text-sm font-black uppercase tracking-widest transition-all duration-300 ${selected ? 'text-[#002060] translate-x-2' : 'text-slate-500'}`}>{opt}</span>
-        </label>
+
+            <div className="flex gap-2">
+                <select
+                    value={draftVal}
+                    onChange={(e) => setDraftVal(e.target.value)}
+                    className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-200 outline-none"
+                >
+                    {config?.options?.map((opt, i) => (
+                        <option key={i} value={opt.value}>{opt.label}</option>
+                    ))}
+                </select>
+                <button onClick={handleSubmit} className={"px-4 rounded-xl text-white flex items-center justify-center " + color.gradient}>
+                    <Send size={16} />
+                </button>
+            </div>
+        </div>
     );
 };
 
 const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
-    const config = widget.config as RadioButtonsConfig;
-    const options = config?.options && config.options.length > 0 ? config.options : [
-        { label: 'Option 1', value: '1' },
-        { label: 'Option 2', value: '2' },
-        { label: 'Option 3', value: '3' }
-    ];
-    const [selected, setSelected] = useState(options[0].value);
     const color = getColor(colorIndex);
-    const t = TRANSLATIONS[language];
+    const [draftVal, setDraftVal] = useState<string>('');
+    const pubTopic = getPublishTopic(widget);
+    const pubVar = getPublishVar(widget);
+    const config = widget.config as RadioButtonsConfig;
 
-    // Sync with live data
     useEffect(() => {
         if (currentValue !== undefined) {
-             setSelected(String(currentValue));
+            setDraftVal(String(currentValue));
         }
     }, [currentValue]);
 
+    const handleSubmit = () => {
+        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
+    };
+
     return (
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
-            <div className="flex items-center justify-between mb-6">
-                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
-                    title={t.configuration}
-                    content={`${t.widgetConfigTopic}: ${widget.mqttTopic}`}
-                />
+            <div className="flex items-center justify-between mb-4">
+                <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
+                <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + color.gradient}>
+                    ACTUAL: {currentValue !== undefined ? String(currentValue) : '--'}
+                </div>
             </div>
-            <div className="flex-1 flex flex-col justify-center gap-5">
-                {options.map(opt => (
-                    <RadioButtonOption
-                        key={opt.value}
-                        opt={opt.label}
-                        id={opt.value + widget.id}
-                        selected={selected === opt.value}
-                        primaryColor={color.primary}
-                        borderClass={color.border.replace('border-', 'border-')} // just using the class from color object
-                        onSelect={() => {
-                            setSelected(opt.value);
-                            mqttService.publishVariableUpdate(widget.mqttTopic, widget.variableName, opt.value);
-                        }}
-                    />
+
+            <div className="flex-1 flex flex-col justify-center gap-2 mb-4">
+                {config?.options?.map((opt, i) => (
+                    <label key={i} className="flex items-center gap-3 cursor-pointer">
+                        <input
+                            type="radio"
+                            name={"radio_" + widget.id}
+                            value={opt.value}
+                            checked={draftVal === String(opt.value)}
+                            onChange={(e) => setDraftVal(e.target.value)}
+                            className="accent-slate-900"
+                        />
+                        <span className="text-sm font-bold text-slate-600">{opt.label}</span>
+                    </label>
                 ))}
             </div>
+            
+            <button onClick={handleSubmit} className="flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800">
+                <Send size={12} /> Send Command
+            </button>
         </div>
     );
 };
-
-
-// ══════════════════════════════════════════════════════════
-//  MAIN WIDGET RENDERER
-// ══════════════════════════════════════════════════════════
-interface WidgetRendererProps {
-    widget: Widget;
-    language?: Language;
-    colorIndex?: number;
-    isPreview?: boolean;  // true when in admin designer preview mode
-    currentData?: any;    // The current data for this widget (extracted from MQTT)
-    historyData?: any[];  // Historical data for charts (historical view)
-    timeRange?: string;
-    onRangeChange?: (range: string) => void;
-    isOffline?: boolean;
-}
 
 export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     widget,
