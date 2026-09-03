@@ -899,7 +899,7 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                     <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
                 <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + (actualIsOn ? color.gradient : 'bg-slate-300')}>
-                    ACTUAL: {actualIsOn ? activeLabel.toUpperCase() : inactiveLabel.toUpperCase()}
+                    STATE: {actualIsOn ? activeLabel.toUpperCase() : inactiveLabel.toUpperCase()}
                 </div>
             </div>
 
@@ -950,7 +950,7 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                     <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
                 <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + color.gradient}>
-                    ACTUAL: {currentValue !== undefined ? Number(currentValue).toFixed(1) : '--'}
+                    STATE: {currentValue !== undefined ? Number(currentValue).toFixed(1) : '--'}
                 </div>
             </div>
 
@@ -999,7 +999,7 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
                     <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
                 <div className="text-[10px] text-slate-400 font-bold max-w-[100px] truncate" title={String(currentValue)}>
-                    Actual: {currentValue !== undefined ? String(currentValue) : '--'}
+                    STATE: {currentValue !== undefined ? String(currentValue) : '--'}
                 </div>
             </div>
 
@@ -1104,7 +1104,7 @@ const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
             <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 <div className="text-[10px] text-slate-400 font-bold max-w-[100px] truncate" title={String(currentValue)}>
-                    Actual: {currentValue !== undefined ? String(currentValue) : '--'}
+                    STATE: {currentValue !== undefined ? String(currentValue) : '--'}
                 </div>
             </div>
 
@@ -1148,7 +1148,7 @@ const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; current
             <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + color.gradient}>
-                    ACTUAL: {currentValue !== undefined ? String(currentValue) : '--'}
+                    STATE: {currentValue !== undefined ? String(currentValue) : '--'}
                 </div>
             </div>
 
@@ -1273,6 +1273,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 };
 
 export default WidgetRenderer;
+
 
 
 
