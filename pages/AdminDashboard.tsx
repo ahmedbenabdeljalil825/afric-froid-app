@@ -576,40 +576,7 @@ const AdminDashboard: React.FC = () => {
                       })}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Telemetry Topic</label>
-                      <input
-                        type="text"
-                        placeholder="client/data"
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none text-sm font-mono"
-                        value={formData.mqttConfig?.topics.telemetry || ''}
-                        onChange={e => setFormData({
-                          ...formData,
-                          mqttConfig: {
-                            ...formData.mqttConfig!,
-                            topics: { ...formData.mqttConfig!.topics, telemetry: e.target.value }
-                          }
-                        })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Command Topic</label>
-                      <input
-                        type="text"
-                        placeholder="client/command"
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none text-sm font-mono"
-                        value={formData.mqttConfig?.topics.command || ''}
-                        onChange={e => setFormData({
-                          ...formData,
-                          mqttConfig: {
-                            ...formData.mqttConfig!,
-                            topics: { ...formData.mqttConfig!.topics, command: e.target.value }
-                          }
-                        })}
-                      />
-                    </div>
-                  </div>
+                  
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Username (Optional)</label>
@@ -690,3 +657,4 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
+
