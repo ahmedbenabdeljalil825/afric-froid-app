@@ -633,32 +633,32 @@ const AdminUserDesigner: React.FC = () => {
 
                                                                         {widgetForm.category === WidgetCategory.CONTROLLING && (
                                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 mb-4">
-                                            <h5 className="text-xs font-bold text-slate-500 uppercase mb-3">Write (Publish) Configuration</h5>
+                                            <h5 className="text-xs font-bold text-slate-500 uppercase mb-3">Read (Subscribe) Configuration</h5>
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                                                        Publish Topic
-                                                        <InfoTooltip title="Publish Topic" content="Optional. If the widget writes to a different topic than it reads from." />
+                                                        Read Topic
+                                                        <InfoTooltip title="Read Topic" content="Optional. If the widget reads state from a different topic than it publishes to." />
                                                     </label>
                                                     <input
                                                         type="text"
                                                         className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none font-mono text-sm"
                                                         placeholder="Leave blank to use the same as Read Topic"
-                                                        value={(widgetForm.config as any)?.publishTopic || ''}
-                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...widgetForm.config, publishTopic: e.target.value } })}
+                                                        value={(widgetForm.config as any)?.readTopic || ''}
+                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...widgetForm.config, readTopic: e.target.value } })}
                                                     />
                                                 </div>
                                                 <div>
                                                     <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
-                                                        Publish Variable Name
-                                                        <InfoTooltip title="Publish Variable Name" content="Optional. If the widget writes to a different variable than it reads." />
+                                                        Read Variable Name
+                                                        <InfoTooltip title="Read Variable Name" content="Optional. If the widget reads state from a different variable than it publishes." />
                                                     </label>
                                                     <input
                                                         type="text"
                                                         className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none font-mono text-sm"
                                                         placeholder="Leave blank to use the same as Read Variable"
-                                                        value={(widgetForm.config as any)?.publishVariableName || ''}
-                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...widgetForm.config, publishVariableName: e.target.value } })}
+                                                        value={(widgetForm.config as any)?.readVariableName || ''}
+                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...widgetForm.config, readVariableName: e.target.value } })}
                                                     />
                                                 </div>
                                             </div>
@@ -953,32 +953,7 @@ const AdminUserDesigner: React.FC = () => {
                                             </div>
                                         </div>
                                     )}
-                                    {widgetForm.widgetType === ControllingWidgetType.TOGGLE && (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">ON Payload (JSON)</label>
-                                                <input
-                                                    type="text"
-                                                    title="Payload for ON state"
-                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm font-mono"
-                                                    placeholder="e.g. true or 1 or 'TRUE'"
-                                                    value={(widgetForm.config as any)?.onPayload ?? ''}
-                                                    onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), onPayload: e.target.value } })}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">OFF Payload (JSON)</label>
-                                                <input
-                                                    type="text"
-                                                    title="Payload for OFF state"
-                                                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm font-mono"
-                                                    placeholder="e.g. false or 0 or 'FALSE'"
-                                                    value={(widgetForm.config as any)?.offPayload ?? ''}
-                                                    onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), offPayload: e.target.value } })}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
+
 
                                     {/* Button Config */}
                                     {widgetForm.widgetType === ControllingWidgetType.BUTTON && (

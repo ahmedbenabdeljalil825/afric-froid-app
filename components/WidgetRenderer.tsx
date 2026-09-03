@@ -41,9 +41,17 @@ function getColor(index: number) {
     return WIDGET_COLORS[index % WIDGET_COLORS.length];
 }
 
-function mqttTopicVariableTooltip(t: Translation, widget: Pick<Widget, 'mqttTopic' | 'variableName'>): string {
+function mqttTopicVariableTooltip(t: Translation, widget: Pick<Widget, 'mqttTopic' | 'variableName' | 'category' | 'config'>): string {
     let s = `${t.widgetConfigTopic}: ${widget.mqttTopic}`;
     if (widget.variableName) s += `\n${t.widgetConfigVariable}: ${widget.variableName}`;
+    
+    const config = widget.config as any;
+    if (widget.category === 'CONTROLLING' && (config?.readTopic || config?.readVariableName)) {
+        s += `\n\n-- READ (SUBSCRIBE) --`;
+        if (config.readTopic) s += `\n${t.widgetConfigTopic}: ${config.readTopic}`;
+        if (config.readVariableName) s += `\n${t.widgetConfigVariable}: ${config.readVariableName}`;
+    }
+    
     return s;
 }
 
@@ -803,8 +811,8 @@ const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; curr
 
 // ── Button Widget ──
 // Universal helper to get the publish topic and variable
-const getPublishTopic = (widget: Widget) => (widget.config as any)?.publishTopic || widget.mqttTopic;
-const getPublishVar = (widget: Widget) => (widget.config as any)?.publishVariableName || widget.variableName;
+const getPublishTopic = (widget: Widget) => widget.mqttTopic;
+const getPublishVar = (widget: Widget) => widget.variableName;
 
 const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview?: boolean; currentValue?: any; language: Language }> = ({ widget, colorIndex, isPreview, currentValue, language }) => {
     const color = getColor(colorIndex);

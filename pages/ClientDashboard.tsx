@@ -182,7 +182,12 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
 
         // Subscribe to all unique topics used by widgets
         const uniqueTopics = new Set<string>();
-        fetchedWidgets.forEach(w => uniqueTopics.add(w.mqttTopic));
+        fetchedWidgets.forEach(w => {
+            uniqueTopics.add(w.mqttTopic);
+            if ((w.config as any)?.readTopic) {
+                uniqueTopics.add((w.config as any).readTopic);
+            }
+        });
 
         // Also add global telemetry if not in widgets
         if (user.mqttConfig?.topics.telemetry) {
@@ -265,7 +270,8 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
           {widgets.map((widget, index) => {
-            const val = liveData[widget.variableName];
+            const readVarName = (widget.config as any)?.readVariableName || widget.variableName;
+              const val = liveData[readVarName];
 
             const range = timeRanges[widget.id] || '1';
             const hours = parseInt(range, 10) || 1;
