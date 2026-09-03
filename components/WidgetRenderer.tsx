@@ -866,8 +866,6 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
         return s === 'true' || s === '1' || s === 'on' || s === 'active' || s === 'running';
     };
 
-    const activeLabel = (widget.config as any)?.activeLabel || t.on;
-    const inactiveLabel = (widget.config as any)?.inactiveLabel || t.off;
     const actualIsOn = parseValue(currentValue);
     const [draftIsOn, setDraftIsOn] = useState(actualIsOn);
 
@@ -1267,6 +1265,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 };
 
 export default WidgetRenderer;
+
 
 
 
