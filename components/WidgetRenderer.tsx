@@ -842,7 +842,7 @@ const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview?: b
 
             <button
                 onClick={handlePress}
-                className={"w-full py-4 px-6 rounded-xl font-bold uppercase tracking-wider text-sm transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg active:scale-95 active:shadow-inner text-white " + color.gradient}
+                className="w-full py-4 px-6 rounded-xl font-bold uppercase tracking-wider text-sm transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg active:scale-95 active:shadow-inner text-white" style={{ backgroundColor: color.primary }}
             >
                 {(widget.config as any).buttonText || 'ACTIVATE'}
             </button>
@@ -898,7 +898,7 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                     <ToggleLeft size={16} className={color.text} />
                     <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
-                <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + (actualIsOn ? color.gradient : 'bg-slate-300')}>
+                <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + (actualIsOn ? '' : 'bg-slate-300')} style={actualIsOn ? { backgroundColor: color.primary } : {}}>
                     STATE: {actualIsOn ? activeLabel.toUpperCase() : inactiveLabel.toUpperCase()}
                 </div>
             </div>
@@ -949,7 +949,7 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                     <SlidersHorizontal size={16} className={color.text} />
                     <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
-                <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + color.gradient}>
+                <div className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white" style={{ backgroundColor: color.primary }}>
                     STATE: {currentValue !== undefined ? Number(currentValue).toFixed(1) : '--'}
                 </div>
             </div>
@@ -1011,7 +1011,7 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
                     className="flex-1 w-full px-4 py-2 text-sm rounded-xl border border-slate-200 focus:border-slate-500 outline-none font-medium"
                     placeholder="Enter text..."
                 />
-                <button onClick={handleSubmit} className={"px-4 rounded-xl text-white flex items-center justify-center " + color.gradient}>
+                <button onClick={handleSubmit} className="px-4 rounded-xl text-white flex items-center justify-center" style={{ backgroundColor: color.primary }}>
                     <Send size={16} />
                 </button>
             </div>
@@ -1118,7 +1118,7 @@ const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
                         <option key={i} value={opt.value}>{opt.label}</option>
                     ))}
                 </select>
-                <button onClick={handleSubmit} className={"px-4 rounded-xl text-white flex items-center justify-center " + color.gradient}>
+                <button onClick={handleSubmit} className="px-4 rounded-xl text-white flex items-center justify-center" style={{ backgroundColor: color.primary }}>
                     <Send size={16} />
                 </button>
             </div>
@@ -1147,7 +1147,7 @@ const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; current
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col group">
             <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
-                <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + color.gradient}>
+                <div className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white" style={{ backgroundColor: color.primary }}>
                     STATE: {currentValue !== undefined ? String(currentValue) : '--'}
                 </div>
             </div>
