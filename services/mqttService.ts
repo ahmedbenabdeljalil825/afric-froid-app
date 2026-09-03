@@ -9,6 +9,7 @@ class MQTTService {
     private client: MqttClient | null = null;
     private config: MqttConfig | null = null;
     private topicCallbacks: Map<string, Set<MessageCallback>> = new Map();
+    private topicQos: Map<string, 0 | 1 | 2> = new Map();
     private onStatusCallbacks: Set<StatusCallback> = new Set();
     private topicState: Record<string, any> = {};
     private topicTimestamps: Record<string, number> = {};
