@@ -852,6 +852,56 @@ const AdminUserDesigner: React.FC = () => {
 
                                     {/* Toggle Config */}
                                     {widgetForm.widgetType === ControllingWidgetType.TOGGLE && (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">ON Payload (JSON)</label>
+                                                    <input
+                                                        type="text"
+                                                        title="Payload for ON state"
+                                                        className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm font-mono"
+                                                        placeholder="e.g. true or 1 or 'TRUE'"
+                                                        value={(widgetForm.config as any)?.onPayload ?? ''}
+                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), onPayload: e.target.value } })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">OFF Payload (JSON)</label>
+                                                    <input
+                                                        type="text"
+                                                        title="Payload for OFF state"
+                                                        className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm font-mono"
+                                                        placeholder="e.g. false or 0 or 'FALSE'"
+                                                        value={(widgetForm.config as any)?.offPayload ?? ''}
+                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), offPayload: e.target.value } })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">ON Label (Display)</label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm"
+                                                        placeholder="e.g. AUTO or ENABLED"
+                                                        value={(widgetForm.config as any)?.activeLabel ?? ''}
+                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), activeLabel: e.target.value } })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">OFF Label (Display)</label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full px-3 py-1.5 rounded-lg border border-slate-200 outline-none text-sm"
+                                                        placeholder="e.g. MANUAL or DISABLED"
+                                                        value={(widgetForm.config as any)?.inactiveLabel ?? ''}
+                                                        onChange={e => setWidgetForm({ ...widgetForm, config: { ...(widgetForm.config as any), inactiveLabel: e.target.value } })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {widgetForm.widgetType === ControllingWidgetType.TOGGLE && (
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-xs font-bold text-slate-500 mb-1">ON Payload (JSON)</label>
@@ -1049,6 +1099,7 @@ const AdminUserDesigner: React.FC = () => {
 };
 
 export default AdminUserDesigner;
+
 
 
 

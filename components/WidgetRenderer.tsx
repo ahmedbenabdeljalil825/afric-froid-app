@@ -847,6 +847,8 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
     const t = TRANSLATIONS[language];
     const pubTopic = getPublishTopic(widget);
     const pubVar = getPublishVar(widget);
+    const activeLabel = (widget.config as any)?.activeLabel || t.on;
+    const inactiveLabel = (widget.config as any)?.inactiveLabel || t.off;
 
     const parseValue = (val: any): boolean => {
         if (val === undefined || val === null) return false;
@@ -864,6 +866,8 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
         return s === 'true' || s === '1' || s === 'on' || s === 'active' || s === 'running';
     };
 
+    const activeLabel = (widget.config as any)?.activeLabel || t.on;
+    const inactiveLabel = (widget.config as any)?.inactiveLabel || t.off;
     const actualIsOn = parseValue(currentValue);
     const [draftIsOn, setDraftIsOn] = useState(actualIsOn);
 
@@ -889,7 +893,7 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                     <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
                 <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + (actualIsOn ? color.gradient : 'bg-slate-300')}>
-                    ACTUAL: {actualIsOn ? t.on.toUpperCase() : t.off.toUpperCase()}
+                    ACTUAL: {actualIsOn ? activeLabel.toUpperCase() : inactiveLabel.toUpperCase()}
                 </div>
             </div>
 
