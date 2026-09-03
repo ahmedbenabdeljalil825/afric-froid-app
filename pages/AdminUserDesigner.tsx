@@ -31,6 +31,7 @@ const AdminUserDesigner: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
     const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
+    const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
 
     // Widget form state
     const designerLang: Language = user?.language === 'en' ? 'en' : 'fr';
@@ -223,6 +224,51 @@ const AdminUserDesigner: React.FC = () => {
         }
     };
 
+    
+    const handleDragStart = (e: React.DragEvent, id: string) => {
+        setDraggedWidgetId(id);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = async (e: React.DragEvent, targetId: string) => {
+        e.preventDefault();
+        if (!draggedWidgetId || draggedWidgetId === targetId) return;
+
+        const originalWidgets = [...widgets];
+        const draggedIndex = widgets.findIndex(w => w.id === draggedWidgetId);
+        const targetIndex = widgets.findIndex(w => w.id === targetId);
+        
+        if (draggedIndex === -1 || targetIndex === -1) return;
+
+        const newWidgets = [...widgets];
+        const [removed] = newWidgets.splice(draggedIndex, 1);
+        newWidgets.splice(targetIndex, 0, removed);
+
+        const updatedWidgets = newWidgets.map((w, index) => ({
+            ...w,
+            position: index
+        }));
+
+        setWidgets(updatedWidgets);
+        setDraggedWidgetId(null);
+
+        try {
+            await Promise.all(updatedWidgets.map(w => 
+                supabase.from('widgets').update({ position: w.position }).eq('id', w.id)
+            ));
+            toast('Order saved', 'success');
+        } catch (error: any) {
+            console.error('Error reordering widgets:', error);
+            toast('Failed to save order', 'error');
+            setWidgets(originalWidgets);
+        }
+    };
+
     const handleDeleteWidget = async (widgetId: string) => {
         const ok = await confirm({
             title: 'Delete widget?',
@@ -336,7 +382,13 @@ const AdminUserDesigner: React.FC = () => {
                             widgets.map((widget) => (
                                 <div
                                     key={widget.id}
-                                    className={`p-4 rounded-xl border-2 transition-all ${widget.isActive
+                                    draggable={true}
+                                    onDragStart={(e) => handleDragStart(e as any, widget.id)}
+                                    onDragOver={(e) => handleDragOver(e as any)}
+                                    onDrop={(e) => handleDrop(e as any, widget.id)}
+                                    className={`p-4 rounded-xl border-2 transition-all cursor-move ${
+                                        draggedWidgetId === widget.id ? 'opacity-50 scale-95 border-frost-400' : ''
+                                    } ${widget.isActive
                                         ? 'border-frost-200 bg-frost-50/30'
                                         : 'border-slate-100 bg-slate-50 opacity-60'
                                         }`}
