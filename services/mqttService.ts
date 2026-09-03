@@ -364,7 +364,7 @@ class MQTTService {
         }
         
         // Subscribe the MQTT client to the topic if not already subscribed
-        this.client.subscribe(targetTopic, { qos: this.topicQos.get(targetTopic) }, (err: Error | null) => {
+        this.client.subscribe(targetTopic, { qos: this.topicQos.get(targetTopic) || 0 }, (err: Error | null) => {
             if (err) console.error('Dynamic subscription error:', err);
         });
 
