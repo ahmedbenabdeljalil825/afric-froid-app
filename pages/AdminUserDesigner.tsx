@@ -592,7 +592,7 @@ const AdminUserDesigner: React.FC = () => {
                                                         type="text"
                                                         className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none font-mono text-sm"
                                                         placeholder="Leave blank to use the same as Read Topic"
-                                                        value={widgetForm.config?.publishTopic || ''}
+                                                        value={(widgetForm.config as any)?.publishTopic || ''}
                                                         onChange={e => setWidgetForm({ ...widgetForm, config: { ...widgetForm.config, publishTopic: e.target.value } })}
                                                     />
                                                 </div>
@@ -605,7 +605,7 @@ const AdminUserDesigner: React.FC = () => {
                                                         type="text"
                                                         className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none font-mono text-sm"
                                                         placeholder="Leave blank to use the same as Read Variable"
-                                                        value={widgetForm.config?.publishVariableName || ''}
+                                                        value={(widgetForm.config as any)?.publishVariableName || ''}
                                                         onChange={e => setWidgetForm({ ...widgetForm, config: { ...widgetForm.config, publishVariableName: e.target.value } })}
                                                     />
                                                 </div>
@@ -1049,6 +1049,7 @@ const AdminUserDesigner: React.FC = () => {
 };
 
 export default AdminUserDesigner;
+
 
 
 

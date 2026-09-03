@@ -836,7 +836,7 @@ const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview?: b
                 onClick={handlePress}
                 className={"w-full py-4 px-6 rounded-xl font-bold uppercase tracking-wider text-sm transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg active:scale-95 active:shadow-inner text-white " + color.gradient}
             >
-                {(widget.config as ButtonConfig).buttonText || t.activate}
+                {(widget.config as any).buttonText || 'ACTIVATE'}
             </button>
         </div>
     );
@@ -1165,6 +1165,17 @@ const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; current
     );
 };
 
+export interface WidgetRendererProps {
+    widget: Widget;
+    language?: Language;
+    colorIndex?: number;
+    isPreview?: boolean;
+    currentData?: any;
+    historyData?: any[];
+    timeRange?: string;
+    onRangeChange?: (range: string) => void;
+    isOffline?: boolean;
+}
 export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     widget,
     language = 'fr',
@@ -1252,6 +1263,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 };
 
 export default WidgetRenderer;
+
 
 
 
