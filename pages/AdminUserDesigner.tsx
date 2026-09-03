@@ -261,10 +261,10 @@ const AdminUserDesigner: React.FC = () => {
             await Promise.all(updatedWidgets.map(w => 
                 supabase.from('widgets').update({ position: w.position }).eq('id', w.id)
             ));
-            toast('Order saved', 'success');
+            toast({ kind: 'success', title: 'Order saved', message: 'Widget order updated successfully.' });
         } catch (error: any) {
             console.error('Error reordering widgets:', error);
-            toast('Failed to save order', 'error');
+            toast({ kind: 'error', title: 'Save failed', message: 'Failed to update widget order.' });
             setWidgets(originalWidgets);
         }
     };
@@ -1151,6 +1151,7 @@ const AdminUserDesigner: React.FC = () => {
 };
 
 export default AdminUserDesigner;
+
 
 
 
