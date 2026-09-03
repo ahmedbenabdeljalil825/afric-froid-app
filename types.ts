@@ -48,7 +48,7 @@ export interface Widget {
 
   // MQTT Configuration
   mqttTopic: string;
-  mqttAction: 'SUBSCRIBE' | 'PUBLISH';
+  mqttAction: 'SUBSCRIBE' | 'PUBLISH' | 'SYNC';
   qos?: MqttQoS;
   retain?: boolean;
 
@@ -388,5 +388,6 @@ export interface Translation {
   exportCsvVariable: string;
   exportCsvUnit: string;
 }
+
 
 

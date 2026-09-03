@@ -590,7 +590,7 @@ const AdminUserDesigner: React.FC = () => {
                                                     onChange={() => setWidgetForm({ ...widgetForm, mqttAction: 'SUBSCRIBE' })}
                                                     className="text-frost-600"
                                                 />
-                                                <span className="text-sm">Subscribe</span>
+                                                <span className="text-sm">Subscribe Only</span>
                                             </label>
                                             <label className="flex items-center gap-2 cursor-pointer">
                                                 <input
@@ -600,7 +600,17 @@ const AdminUserDesigner: React.FC = () => {
                                                     onChange={() => setWidgetForm({ ...widgetForm, mqttAction: 'PUBLISH' })}
                                                     className="text-frost-600"
                                                 />
-                                                <span className="text-sm">Publish</span>
+                                                <span className="text-sm">Publish Only</span>
+                                            </label>
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="radio"
+                                                    name="mqttAction"
+                                                    checked={widgetForm.mqttAction === 'SYNC'}
+                                                    onChange={() => setWidgetForm({ ...widgetForm, mqttAction: 'SYNC' })}
+                                                    className="text-frost-600"
+                                                />
+                                                <span className="text-sm">Sync (Both)</span>
                                             </label>
                                         </div>
                                     </div>
@@ -1042,5 +1052,7 @@ const AdminUserDesigner: React.FC = () => {
 };
 
 export default AdminUserDesigner;
+
+
 
 
