@@ -18,11 +18,11 @@ import {
 } from '../services/telemetryExport';
 
 const WIDGET_COLORS = [
-    { primary: '#009fe3', gradient: 'from-cyan-500 to-blue-600', bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200', ring: 'ring-cyan-100' },
-    { primary: '#6366f1', gradient: 'from-indigo-500 to-purple-600', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', ring: 'ring-indigo-100' },
-    { primary: '#f59e0b', gradient: 'from-amber-400 to-orange-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', ring: 'ring-amber-100' },
-    { primary: '#10b981', gradient: 'from-emerald-400 to-teal-600', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', ring: 'ring-emerald-100' },
-    { primary: '#ef4444', gradient: 'from-red-400 to-rose-600', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', ring: 'ring-red-100' },
+    { primary: '#009fe3', gradient: 'bg-gradient-to-r from-cyan-500 to-blue-600', bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200', ring: 'ring-cyan-100' },
+    { primary: '#6366f1', gradient: 'bg-gradient-to-r from-indigo-500 to-purple-600', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', ring: 'ring-indigo-100' },
+    { primary: '#f59e0b', gradient: 'bg-gradient-to-r from-amber-400 to-orange-500', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', ring: 'ring-amber-100' },
+    { primary: '#10b981', gradient: 'bg-gradient-to-r from-emerald-400 to-teal-600', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', ring: 'ring-emerald-100' },
+    { primary: '#ef4444', gradient: 'bg-gradient-to-r from-red-400 to-rose-600', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', ring: 'ring-red-100' },
 ];
 
 const isWideLayout = (widget: Widget): boolean => {
