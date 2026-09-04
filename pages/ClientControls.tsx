@@ -215,7 +215,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
       {widgets.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr mb-12">
           {widgets.map((widget, index) => {
-             const rTopic = (widget.config as any)?.readTopic || widget.mqttTopic; const rVar = (widget.config as any)?.readVariable || widget.variableName; const val = liveData[rTopic] && liveData[rTopic][rVar] !== undefined ? liveData[rTopic][rVar] : undefined;
+             const rTopic = (widget.config as any)?.readTopic || widget.mqttTopic; const rVar = (widget.config as any)?.readVariableName || widget.variableName; const val = liveData[rTopic] && liveData[rTopic][rVar] !== undefined ? liveData[rTopic][rVar] : undefined;
              const isLarge = isWideWidget(widget);
              
              // Merge history and live data for charts
@@ -251,4 +251,5 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 };
 
 export default ClientControls;
+
 
