@@ -90,7 +90,6 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
             .order('created_at', { ascending: true });
 
           if (error) throw error;
-        if (isCancelled) return;
 
           data?.forEach((row: any) => {
             const wid = row.widget_id;
@@ -319,6 +318,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
 };
 
 export default ClientDashboard;
+
 
 
 

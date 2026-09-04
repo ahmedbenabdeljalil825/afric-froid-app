@@ -66,7 +66,6 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
           .order('position', { ascending: true });
 
         if (error) throw error;
-        if (isCancelled) return;
 
         const allMapped: Widget[] = (data || []).map(mapDbWidget);
         mqttService.setMonitoredWidgets(allMapped);
@@ -125,7 +124,6 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-        if (isCancelled) return;
 
       const pts = (data || []).map((row: any) => ({
         timestamp: new Date(row.created_at).getTime(),
@@ -156,7 +154,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
         const hours = parseInt(range, 10) || 1;
         const history = await fetchWidgetHistory(w, hours);
         if (!cancelled) {
-          setHistoryData((prev) => ({ ...prev, [w.id]: history }));
+          setHistoryData((prev) => ({ ...prev, [w.id]: history as any[] }));
         }
       }
     };
@@ -255,6 +253,9 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 };
 
 export default ClientControls;
+
+
+
 
 
 

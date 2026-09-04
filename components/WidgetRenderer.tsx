@@ -980,6 +980,7 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
 const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState('');
+    const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
     const pubVar = getPublishVar(widget);
 
@@ -1088,6 +1089,7 @@ const TimePickerWidget: React.FC<{ widget: Widget; colorIndex: number; language:
 const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState<string>('');
+    const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
     const pubVar = getPublishVar(widget);
     const config = widget.config as ComboBoxConfig;
@@ -1132,6 +1134,7 @@ const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
 const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState<string>('');
+    const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
     const pubVar = getPublishVar(widget);
     const config = widget.config as RadioButtonsConfig;
@@ -1200,7 +1203,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     onRangeChange,
     isOffline = false
 }) => {
-    const displayValue = isPreview ? (widget.type === ReadingWidgetType.GAUGE ? 67 : 24.5) : currentData;
+    const displayValue = isPreview ? (widget.widgetType === ReadingWidgetType.GAUGE ? 67 : 24.5) : currentData;
     const displayHistory = isPreview ? generateDemoTimeSeries() : (historyData || []);
 
     const renderWidget = () => {
@@ -1276,6 +1279,9 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 };
 
 export default WidgetRenderer;
+
+
+
 
 
 
