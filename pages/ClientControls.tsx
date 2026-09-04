@@ -52,6 +52,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 
   useEffect(() => {
     let activeSubscriptions: (() => void)[] = [];
+    let isCancelled = false;
 
     const fetchAndSubscribe = async () => {
       try {
@@ -65,6 +66,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
           .order('position', { ascending: true });
 
         if (error) throw error;
+        if (isCancelled) return;
 
         const allMapped: Widget[] = (data || []).map(mapDbWidget);
         mqttService.setMonitoredWidgets(allMapped);
@@ -103,6 +105,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
     fetchAndSubscribe();
 
     return () => {
+      isCancelled = true;
       activeSubscriptions.forEach(unsub => unsub());
     };
   }, [user.id, user.mqttConfig?.topics.telemetry]);
@@ -122,6 +125,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
+        if (isCancelled) return;
 
       const pts = (data || []).map((row: any) => ({
         timestamp: new Date(row.created_at).getTime(),
@@ -251,5 +255,6 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 };
 
 export default ClientControls;
+
 
 

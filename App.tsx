@@ -54,7 +54,7 @@ const AppContent: React.FC<{
   return (
     <Suspense fallback={<GlobalLoader />}>
       <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
+        <Routes location={location}>
           <Route
             path="/login"
             element={

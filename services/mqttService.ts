@@ -22,8 +22,8 @@ class MQTTService {
     public status: 'connected' | 'disconnected' | 'connecting' | 'error' = 'disconnected';
     private lastErrorMessage: string | null = null;
 
-    /** Background tabs throttle timers — MQTT keepalive pings stop → false “offline”. 0 = no client pings (broker must allow). */
-    private readonly MQTT_KEEPALIVE_SEC = 0;
+    /** Background tabs throttle timers — MQTT keepalive pings stop → false “offline”. 60s standard ping. */
+    private readonly MQTT_KEEPALIVE_SEC = 60;
 
     private offlineUiTimer: ReturnType<typeof setTimeout> | null = null;
     private readonly OFFLINE_UI_DEBOUNCE_MS = 12_000;
@@ -434,15 +434,9 @@ class MQTTService {
                 const intervalSeconds = Math.max(5, widget.historyInterval || 10);
                 const lastStored = this.lastStoredTimestamps.get(widget.id) || 0;
                 
-                // Only push to buffer if the required interval has passed
+                // Telemetry persistence is now fully handled by the PC bridge.
+                // We no longer push to an internal buffer array to avoid massive memory leaks.
                 if (nowMs - lastStored >= intervalSeconds * 1000) {
-                    this.telemetryBuffer.push({
-                        widget_id: widget.id,
-                        variable_name: key,
-                        value: value,
-                        unit: (widget.config as any)?.unit || undefined,
-                        created_at: now
-                    });
                     this.lastStoredTimestamps.set(widget.id, nowMs);
                 }
             }

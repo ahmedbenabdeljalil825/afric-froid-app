@@ -90,6 +90,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
             .order('created_at', { ascending: true });
 
           if (error) throw error;
+        if (isCancelled) return;
 
           data?.forEach((row: any) => {
             const wid = row.widget_id;
@@ -150,6 +151,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
 
   useEffect(() => {
     let activeSubscriptions: (() => void)[] = [];
+    let isCancelled = false;
 
     const fetchAndSubscribe = async () => {
       try {
@@ -162,6 +164,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
           .order('position', { ascending: true });
 
         if (error) throw error;
+        if (isCancelled) return;
 
         const allMapped: Widget[] = (data || []).map(mapDbWidget);
         mqttService.setMonitoredWidgets(allMapped);
@@ -200,6 +203,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
           addTopic(user.mqttConfig.topics.telemetry, 0);
         }
 
+        if (isCancelled) return;
         uniqueTopicsMap.forEach((qos, topic) => {
           const unsub = mqttService.subscribe((data: any) => {
             setLiveData(prev => ({ ...prev, [topic]: { ...(prev[topic] || {}), ...data } }));
@@ -217,6 +221,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
     fetchAndSubscribe();
 
     return () => {
+      isCancelled = true;
       activeSubscriptions.forEach(unsub => unsub());
     };
   }, [user.id, user.mqttConfig?.topics.telemetry]);
@@ -314,5 +319,6 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
 };
 
 export default ClientDashboard;
+
 
 

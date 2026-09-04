@@ -212,7 +212,13 @@ function listenForCommands() {
 
 async function main() {
   console.log('[bridge] Authenticating with Supabase...');
-  const { error } = await supabase.auth.signInWithPassword({ email: 'admin@africfroid.app', password: 'ahmed123' });
+  const email = process.env.SUPABASE_EMAIL;
+  const password = process.env.SUPABASE_PASSWORD;
+  if (!email || !password) {
+      console.error('[bridge] Missing SUPABASE_EMAIL or SUPABASE_PASSWORD environment variables.');
+      process.exit(1);
+  }
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     console.error('[bridge] Failed to authenticate:', error.message);
     process.exit(1);

@@ -876,13 +876,14 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
 
     const actualIsOn = parseValue(currentValue);
     const [draftIsOn, setDraftIsOn] = useState(actualIsOn);
+    const [isDirty, setIsDirty] = useState(false);
 
     useEffect(() => {
-        setDraftIsOn(actualIsOn);
+        if (!isDirty) setDraftIsOn(actualIsOn);
     }, [actualIsOn]);
 
     const handleSubmit = () => {
-        let targetPayload: any = draftIsOn;
+        setIsDirty(false); let targetPayload: any = draftIsOn;
         const config = widget.config as any;
         if (config?.onPayload !== undefined && config?.offPayload !== undefined && config.onPayload !== '' && config.offPayload !== '') {
             const raw = draftIsOn ? config.onPayload : config.offPayload;
@@ -905,7 +906,7 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
 
             <div className="flex-1 flex flex-col items-center justify-center gap-4 mt-2">
                 <button
-                    onClick={() => setDraftIsOn(!draftIsOn)}
+                    onClick={() => setDraftIsOn(!draftIsOn); setIsDirty(true);}
                     className="relative focus:outline-none transform transition-transform hover:scale-105 active:scale-95"
                 >
                     {draftIsOn ? (
@@ -925,17 +926,18 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
 const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState<number>(0);
+    const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
     const pubVar = getPublishVar(widget);
 
     useEffect(() => {
         if (currentValue !== undefined && !isNaN(Number(currentValue))) {
-            setDraftVal(Number(currentValue));
+            if (!isDirty) setDraftVal(Number(currentValue));
         }
     }, [currentValue]);
 
     const handleSubmit = () => {
-        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
+        setIsDirty(false); mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
     };
 
     const config = widget.config as any;
@@ -961,7 +963,7 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                     max={max}
                     step={config?.step || 1}
                     value={draftVal}
-                    onChange={(e) => setDraftVal(Number(e.target.value))}
+                    onChange={(e) => setDraftVal(Number(e.target.value)); setIsDirty(true);}
                     className="w-full accent-slate-900 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                 />
                 <div className="flex justify-between items-center w-full">
@@ -983,12 +985,12 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
 
     useEffect(() => {
         if (currentValue !== undefined) {
-            setDraftVal(String(currentValue));
+            if (!isDirty) setDraftVal(String(currentValue));
         }
     }, [currentValue]);
 
     const handleSubmit = () => {
-        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
+        setIsDirty(false); mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
     };
 
     return (
@@ -1007,7 +1009,7 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
                 <input
                     type="text"
                     value={draftVal}
-                    onChange={(e) => setDraftVal(e.target.value)}
+                    onChange={(e) => setDraftVal(e.target.value); setIsDirty(true);}
                     className="flex-1 w-full px-4 py-2 text-sm rounded-xl border border-slate-200 focus:border-slate-500 outline-none font-medium"
                     placeholder="Enter text..."
                 />
@@ -1022,17 +1024,18 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
 const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState<number>(0);
+    const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
     const pubVar = getPublishVar(widget);
 
     useEffect(() => {
         if (currentValue !== undefined && !isNaN(Number(currentValue))) {
-            setDraftVal(Number(currentValue));
+            if (!isDirty) setDraftVal(Number(currentValue));
         }
     }, [currentValue]);
 
     const handleSubmit = () => {
-        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
+        setIsDirty(false); mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
     };
 
     return (
@@ -1052,7 +1055,7 @@ const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
                 <input
                     type="number"
                     value={draftVal}
-                    onChange={(e) => setDraftVal(Number(e.target.value))}
+                    onChange={(e) => setDraftVal(Number(e.target.value)); setIsDirty(true);}
                     className="flex-1 w-full px-2 py-2 text-center text-lg font-black rounded-xl border border-slate-200 outline-none"
                 />
                 <button onClick={() => setDraftVal(draftVal + 1)} className="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl font-bold hover:bg-slate-200">+</button>
@@ -1091,12 +1094,12 @@ const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
 
     useEffect(() => {
         if (currentValue !== undefined) {
-            setDraftVal(String(currentValue));
+            if (!isDirty) setDraftVal(String(currentValue));
         }
     }, [currentValue]);
 
     const handleSubmit = () => {
-        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
+        setIsDirty(false); mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
     };
 
     return (
@@ -1111,7 +1114,7 @@ const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
             <div className="flex gap-2">
                 <select
                     value={draftVal}
-                    onChange={(e) => setDraftVal(e.target.value)}
+                    onChange={(e) => setDraftVal(e.target.value); setIsDirty(true);}
                     className="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-200 outline-none"
                 >
                     {config?.options?.map((opt, i) => (
@@ -1135,12 +1138,12 @@ const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; current
 
     useEffect(() => {
         if (currentValue !== undefined) {
-            setDraftVal(String(currentValue));
+            if (!isDirty) setDraftVal(String(currentValue));
         }
     }, [currentValue]);
 
     const handleSubmit = () => {
-        mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
+        setIsDirty(false); mqttService.publishVariableUpdate(pubTopic, pubVar, draftVal);
     };
 
     return (
@@ -1160,7 +1163,7 @@ const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; current
                             name={"radio_" + widget.id}
                             value={opt.value}
                             checked={draftVal === String(opt.value)}
-                            onChange={(e) => setDraftVal(e.target.value)}
+                            onChange={(e) => setDraftVal(e.target.value); setIsDirty(true);}
                             className="accent-slate-900"
                         />
                         <span className="text-sm font-bold text-slate-600">{opt.label}</span>
@@ -1197,7 +1200,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     onRangeChange,
     isOffline = false
 }) => {
-    const displayValue = isPreview ? (ReadingWidgetType.GAUGE ? 67 : 24.5) : currentData;
+    const displayValue = isPreview ? (widget.type === ReadingWidgetType.GAUGE ? 67 : 24.5) : currentData;
     const displayHistory = isPreview ? generateDemoTimeSeries() : (historyData || []);
 
     const renderWidget = () => {
@@ -1273,6 +1276,8 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 };
 
 export default WidgetRenderer;
+
+
 
 
 

@@ -11,15 +11,29 @@ export type TelemetryExportRow = {
 /** All readings still in the database for this widget (bounded by TELEMETRY_RETENTION_DAYS). */
 export async function fetchAllTelemetryForWidget(widgetId: string): Promise<TelemetryExportRow[]> {
   const start = new Date(Date.now() - TELEMETRY_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const { data, error } = await supabase
-    .from('telemetry_readings')
-    .select('created_at, value, variable_name, unit')
-    .eq('widget_id', widgetId)
-    .gte('created_at', start)
-    .order('created_at', { ascending: true });
+  let allData: any[] = [];
+  let currentOffset = 0;
+  const limit = 1000;
+  
+  while (true) {
+    const { data, error } = await supabase
+      .from('telemetry_readings')
+      .select('created_at, value, variable_name, unit')
+      .eq('widget_id', widgetId)
+      .gte('created_at', start)
+      .order('created_at', { ascending: true })
+      .range(currentOffset, currentOffset + limit - 1);
 
-  if (error) throw error;
-  return (data || []) as TelemetryExportRow[];
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    
+    allData = allData.concat(data);
+    if (data.length < limit) break;
+    
+    currentOffset += limit;
+  }
+  
+  return allData as TelemetryExportRow[];
 }
 
 function escapeCsvCell(s: string): string {
