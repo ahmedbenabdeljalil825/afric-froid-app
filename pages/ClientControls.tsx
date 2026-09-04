@@ -74,21 +74,21 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 
         // Pre-populate with last known data from cache
         const cachedState = mqttService.getCurrentState();
-        let initialLiveData = {};
+        let initialLiveData: Record<string, any> = {};
 
         Object.keys(cachedState).forEach(topic => {
           const payload = cachedState[topic];
-          initialLiveData = { ...initialLiveData, ...payload };
+          initialLiveData[topic] = payload;
         });
         setLiveData(initialLiveData);
 
         // Collect all unique topics
         const uniqueTopics = new Set<string>();
-        fetchedWidgets.forEach((w: Widget) => uniqueTopics.add(w.mqttTopic));
+        fetchedWidgets.forEach((w: Widget) => { uniqueTopics.add(w.mqttTopic); if ((w.config as any)?.readTopic) uniqueTopics.add((w.config as any).readTopic); });
 
         uniqueTopics.forEach(topic => {
           const unsub = mqttService.subscribe((data: any) => {
-            setLiveData(prev => ({ ...prev, ...data }));
+            setLiveData(prev => ({ ...prev, [topic]: { ...(prev[topic] || {}), ...data } }));
           }, topic);
           activeSubscriptions.push(unsub);
         });
@@ -215,7 +215,7 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
       {widgets.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr mb-12">
           {widgets.map((widget, index) => {
-             const val = liveData[widget.variableName] !== undefined ? liveData[widget.variableName] : undefined;
+             const rTopic = (widget.config as any)?.readTopic || widget.mqttTopic; const rVar = (widget.config as any)?.readVariable || widget.variableName; const val = liveData[rTopic] && liveData[rTopic][rVar] !== undefined ? liveData[rTopic][rVar] : undefined;
              const isLarge = isWideWidget(widget);
              
              // Merge history and live data for charts
@@ -251,3 +251,4 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
 };
 
 export default ClientControls;
+

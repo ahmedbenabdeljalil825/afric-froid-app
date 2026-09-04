@@ -486,10 +486,7 @@ class MQTTService {
                 console.error('Publish error:', err);
             } else {
                 // console.log(`Published update to ${topic}:`, payload);
-                // Optimistically update local state to avoid race conditions
-                this.topicState[topic] = newState;
-                this.topicTimestamps[topic] = Date.now();
-                this.saveStateToStorage();
+                // Optimistically update removed for strict independence
             }
         });
     }
@@ -547,4 +544,5 @@ class MQTTService {
 }
 
 export const mqttService = new MQTTService();
+
 

@@ -171,11 +171,11 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
 
         // Pre-populate with last known data from cache
         const cachedState = mqttService.getCurrentState();
-        let initialLiveData = {};
+        let initialLiveData: Record<string, any> = {};
 
         Object.keys(cachedState).forEach(topic => {
           const payload = cachedState[topic];
-          initialLiveData = { ...initialLiveData, ...payload };
+          initialLiveData[topic] = payload;
         });
 
         setLiveData(initialLiveData);
@@ -202,7 +202,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
 
         uniqueTopicsMap.forEach((qos, topic) => {
           const unsub = mqttService.subscribe((data: any) => {
-            setLiveData(prev => ({ ...prev, ...data }));
+            setLiveData(prev => ({ ...prev, [topic]: { ...(prev[topic] || {}), ...data } }));
           }, topic, qos as 0|1|2);
           activeSubscriptions.push(unsub);
         });
