@@ -277,7 +277,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr">
           {widgets.map((widget, index) => {
             const readVarName = (widget.config as any)?.readVariableName || widget.variableName;
-              const val = liveData[readVarName];
+              const readTopic = (widget.config as any)?.readTopic || widget.mqttTopic; const val = liveData[readTopic] && liveData[readTopic][readVarName] !== undefined ? liveData[readTopic][readVarName] : undefined;
 
             const range = timeRanges[widget.id] || '1';
             const hours = parseInt(range, 10) || 1;
@@ -314,4 +314,5 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
 };
 
 export default ClientDashboard;
+
 
