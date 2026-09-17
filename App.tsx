@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import Layout from './components/Layout';
 import PageTransition from './components/PageTransition';
 import GlobalLoader from './components/GlobalLoader';
+import { AlarmManager } from './components/AlarmManager';
 
 // Lazy load pages for better performance and to show transitions during network delay
 const ClientDashboard = lazy(() => import('./pages/ClientDashboard'));
@@ -53,6 +54,7 @@ const AppContent: React.FC<{
 
   return (
     <Suspense fallback={<GlobalLoader />}>
+      {currentUser && <AlarmManager />}
       <AnimatePresence mode="wait">
         <Routes location={location}>
           <Route
@@ -226,5 +228,8 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+
+
 
 

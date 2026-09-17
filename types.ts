@@ -8,7 +8,8 @@ export enum UserRole {
 // Widget Type System
 export enum WidgetCategory {
   READING = 'READING',       // Display widgets: charts, gauges, text
-  CONTROLLING = 'CONTROLLING' // Input widgets: buttons, toggles, inputs
+  CONTROLLING = 'CONTROLLING',// Input widgets: buttons, toggles, inputs
+  ALARM = 'ALARM'             // System alarms driven by PLC bools
 }
 
 export enum ReadingWidgetType {
@@ -22,6 +23,10 @@ export enum ReadingWidgetType {
   PROGRESS_BAR = 'PROGRESS_BAR',
   CIRCULAR_PROGRESS = 'CIRCULAR_PROGRESS',
   TEXT_LOG = 'TEXT_LOG'
+}
+
+export enum AlarmWidgetType {
+  ALARM_DISPLAY = 'ALARM_DISPLAY'
 }
 
 export enum ControllingWidgetType {
@@ -44,7 +49,7 @@ export interface Widget {
   userId: string;
   name: string;
   category: WidgetCategory;
-  widgetType: ReadingWidgetType | ControllingWidgetType;
+  widgetType: ReadingWidgetType | ControllingWidgetType | AlarmWidgetType;
 
   // MQTT Configuration
   mqttTopic: string;
@@ -87,7 +92,12 @@ export interface Alarm {
   acknowledgedBy?: string;
 }
 
+export interface AlarmWidgetConfig {
+  customMessage: string;
+}
+
 export type WidgetConfig =
+  | AlarmWidgetConfig
   | GaugeConfig
   | ChartConfig
   | ButtonConfig
@@ -388,6 +398,8 @@ export interface Translation {
   exportCsvVariable: string;
   exportCsvUnit: string;
 }
+
+
 
 
 

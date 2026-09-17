@@ -46,10 +46,10 @@ const subscribedTopics = new Set();
 async function loadWidgets() {
   const { data, error } = await supabase
     .from('widgets')
-    .select('id, mqtt_topic, variable_name, history_interval, config, mqtt_action, category, is_active')
+    .select('id, user_id, mqtt_topic, variable_name, history_interval, config, mqtt_action, category, is_active')
     .eq('is_active', true)
     .eq('mqtt_action', 'SUBSCRIBE')
-    .in('category', ['READING', 'CONTROLLING']);
+    .in('category', ['READING', 'CONTROLLING', 'ALARM']);
 
   if (error) {
     console.error('[bridge] Failed to load widgets:', error.message);
@@ -58,6 +58,49 @@ async function loadWidgets() {
   widgets = data || [];
   console.log(`[bridge] Loaded ${widgets.length} active SUBSCRIBE widgets`);
   syncMqttSubscriptions();
+}
+
+async function handleAlarmTrigger(w, isActive) {
+  try {
+    if (isActive) {
+      // Check if there's already an active (unresolved) alarm for this widget
+      const { data, error } = await supabase
+        .from('alarm_events')
+        .select('id')
+        .eq('widget_id', w.id)
+        .eq('is_resolved', false)
+        .limit(1);
+      
+      if (!error && (!data || data.length === 0)) {
+        await supabase.from('alarm_events').insert({
+          user_id: w.user_id,
+          widget_id: w.id,
+          variable_name: w.variable_name,
+          custom_message: w.config?.customMessage || 'System Alarm Triggered',
+          is_resolved: false,
+          is_acknowledged: false
+        });
+        console.log('[bridge] ALARM TRIGGERED: ' + w.variable_name);
+      }
+    } else {
+      // Resolve active alarms for this widget
+      const { data, error } = await supabase
+        .from('alarm_events')
+        .update({
+          is_resolved: true,
+          resolved_at: new Date().toISOString()
+        })
+        .eq('widget_id', w.id)
+        .eq('is_resolved', false)
+        .select('id');
+      
+      if (!error && data && data.length > 0) {
+        console.log('[bridge] ALARM RESOLVED: ' + w.variable_name);
+      }
+    }
+  } catch (e) {
+    console.error('[bridge] Error handling alarm trigger:', e);
+  }
 }
 
 let pruneInFlight = false;
@@ -108,14 +151,20 @@ function handleMqttMessage(topic, message) {
 
   for (let [key, value] of Object.entries(payload)) {
     if (value === undefined || value === null) continue;
-      if (typeof value === 'boolean') value = value ? 1 : 0;
-      if (typeof value !== 'number' || Number.isNaN(value)) continue;
+      // We keep booleans as booleans for alarms, but cast to 1/0 for telemetry
+      let numericValue = value;
+      if (typeof value === 'boolean') numericValue = value ? 1 : 0;
+      if (typeof numericValue !== 'number' || Number.isNaN(numericValue)) continue;
 
     const matches = widgets.filter(
       (w) => w.variable_name === key && w.mqtt_topic === topic
     );
 
     for (const w of matches) {
+      if (w.category === 'ALARM') {
+        handleAlarmTrigger(w, !!value);
+        continue;
+      }
       const intervalSec = Math.max(5, w.history_interval ?? 10);
       const prev = lastStoredMs.get(w.id) || 0;
       if (nowMs - prev < intervalSec * 1000) continue;
@@ -128,7 +177,7 @@ function handleMqttMessage(topic, message) {
       telemetryBuffer.push({
         widget_id: w.id,
         variable_name: key,
-        value,
+        value: numericValue,
         ...(unit ? { unit } : {}),
         created_at: nowIso,
       });
@@ -238,6 +287,8 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
+
+
 
 
 

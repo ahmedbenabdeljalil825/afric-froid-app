@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { User, UserRole, MqttConfig, Widget, WidgetCategory, ReadingWidgetType, ControllingWidgetType, MqttQoS, Language } from '../types';
+import { User, UserRole, MqttConfig, Widget, WidgetCategory, ReadingWidgetType, ControllingWidgetType, AlarmWidgetType, AlarmWidgetConfig, MqttQoS, Language } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { WidgetRenderer } from '../components/WidgetRenderer';
 import { ChevronLeft, Save, Monitor, MousePointer2, AlertTriangle, Plus, Trash2, GripVertical, X, Settings as SettingsIcon } from 'lucide-react';
@@ -564,13 +564,14 @@ const AdminUserDesigner: React.FC = () => {
                                             setWidgetForm({
                                                 ...widgetForm,
                                                 category,
-                                                widgetType: category === WidgetCategory.READING ? ReadingWidgetType.LINE_CHART : ControllingWidgetType.BUTTON,
-                                                mqttAction: category === WidgetCategory.READING ? 'SUBSCRIBE' : 'PUBLISH'
+                                                widgetType: category === WidgetCategory.ALARM ? AlarmWidgetType.ALARM_DISPLAY : (category === WidgetCategory.READING ? ReadingWidgetType.LINE_CHART : ControllingWidgetType.BUTTON),
+                                                mqttAction: category === WidgetCategory.READING || category === WidgetCategory.ALARM ? 'SUBSCRIBE' : 'PUBLISH'
                                             });
                                         }}
                                     >
                                         <option value={WidgetCategory.READING}>Reading (Display)</option>
                                         <option value={WidgetCategory.CONTROLLING}>Controlling (Input)</option>
+<option value={WidgetCategory.ALARM}>Alarm (System Alert)</option>
                                     </select>
                                 </div>
 
@@ -583,9 +584,11 @@ const AdminUserDesigner: React.FC = () => {
                                         title="Widget type"
                                         className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none"
                                         value={widgetForm.widgetType}
-                                        onChange={e => setWidgetForm({ ...widgetForm, widgetType: e.target.value as ReadingWidgetType | ControllingWidgetType })}
+                                        onChange={e => setWidgetForm({ ...widgetForm, widgetType: e.target.value as ReadingWidgetType | ControllingWidgetType | AlarmWidgetType })}
                                     >
-                                        {widgetForm.category === WidgetCategory.READING ? (
+                                        {widgetForm.category === WidgetCategory.ALARM ? (
+<option value={AlarmWidgetType.ALARM_DISPLAY}>Alarm Rule</option>
+) : widgetForm.category === WidgetCategory.READING ? (
                                             <>
                                                 <option value={ReadingWidgetType.LINE_CHART}>Line Chart</option>
                                                 <option value={ReadingWidgetType.BAR_CHART}>Bar Chart</option>
@@ -631,7 +634,23 @@ const AdminUserDesigner: React.FC = () => {
                                         />
                                     </div>
 
-                                                                        {widgetForm.category === WidgetCategory.CONTROLLING && (
+                                                                        {widgetForm.category === WidgetCategory.ALARM && (
+                                        <div className="mb-4">
+                                            <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                                                Alarm Message *
+                                                <InfoTooltip title="Alarm Message" content="The message displayed to the operator when this boolean variable turns true." />
+                                            </label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none font-medium"
+                                                placeholder="e.g., Compressor 1 High Pressure Trip!"
+                                                value={(widgetForm.config as AlarmWidgetConfig)?.customMessage || ''}
+                                                onChange={e => setWidgetForm({ ...widgetForm, config: { ...widgetForm.config, customMessage: e.target.value } })}
+                                            />
+                                        </div>
+                                    )}
+
+{widgetForm.category === WidgetCategory.CONTROLLING && (
                                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 mb-4">
                                             <h5 className="text-xs font-bold text-slate-500 uppercase mb-3">Read (Subscribe) Configuration</h5>
                                             <div className="space-y-4">
@@ -1141,6 +1160,8 @@ const AdminUserDesigner: React.FC = () => {
 };
 
 export default AdminUserDesigner;
+
+
 
 
 
