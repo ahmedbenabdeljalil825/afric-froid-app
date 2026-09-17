@@ -314,11 +314,13 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
           })}
         </div>
       )}
+      <AlarmHistoryTable userId={user.id} />
     </div>
   );
 };
 
 export default ClientDashboard;
+
 
 
 
