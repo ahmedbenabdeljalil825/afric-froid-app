@@ -4,6 +4,19 @@ All notable changes to the AfricFroid project (Web Dashboard, Android App, Telem
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-18
+
+### Added
+- **Web Dashboard**: Stateful Alarm Architecture. Full support for PLC-triggered system alarms via MQTT.
+- **Web Dashboard**: Dedicated /alarms route to independently track real-time alarm history.
+- **Web Dashboard**: Flashing red visual overlay and audio buzzer triggered globally on unacknowledged alarms.
+- **Web Dashboard**: Full i18n support across all alarm interfaces (Dynamic translation between English and French based on user settings).
+- **Telemetry Bridge (v1.1.0)**: Automatic resolution tracking for alarms. Bridge now intercepts alarm states and manages Postgres lifecycle.
+- **Database**: larm_events table introduced with strict Row Level Security (RLS) isolation.
+
+### Changed
+- **Web Dashboard**: Alarm visual triggers are explicitly suppressed for Admin roles to prevent noise during client management.
+
 ## [1.1.0] - 2026-09-17
 
 ### Added
@@ -27,3 +40,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Added
 - Initial deployment of AfricFroid dashboard with React, Vite, and Recharts.
 - Local telemetry bridge established for Supabase integration.
+

@@ -1,9 +1,10 @@
 {
   "project": "AfricFroid",
   "versions": {
-    "web_dashboard": "1.1.0",
-    "android_app": "1.1.0",
-    "telemetry_bridge": "1.0.0"
+    "web_dashboard": "1.2.0",
+    "android_app": "1.2.0",
+    "telemetry_bridge": "1.1.0"
   },
-  "last_updated": "2026-09-17"
+  "last_updated": "2026-09-18"
 }
+
