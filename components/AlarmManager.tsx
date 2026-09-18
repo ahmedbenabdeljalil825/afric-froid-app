@@ -12,9 +12,13 @@ export interface AlarmEvent {
   resolved_at: string | null;
 }
 
-export function AlarmManager() {
+import { User } from '../types';
+import { TRANSLATIONS } from '../constants';
+
+export function AlarmManager({ user }: { user: User }) {
   const [activeAlarms, setActiveAlarms] = useState<AlarmEvent[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const t = TRANSLATIONS[user.language];
 
   useEffect(() => {
     // Initialize audio element
@@ -126,17 +130,17 @@ export function AlarmManager() {
                 <svg className="w-8 h-8 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                System Alarm
+                {t.systemAlarm}
               </h2>
               <p className="text-red-900 font-medium text-lg mt-1">{alarm.custom_message}</p>
-              <p className="text-red-700 text-sm mt-2 font-mono">Variable: {alarm.variable_name} | Triggered: {new Date(alarm.triggered_at).toLocaleTimeString()}</p>
+              <p className="text-red-700 text-sm mt-2 font-mono">{t.variable}: {alarm.variable_name} | {t.triggered}: {new Date(alarm.triggered_at).toLocaleTimeString(user.language === 'fr' ? 'fr-FR' : 'en-US')}</p>
             </div>
             
             <button 
               onClick={() => handleAcknowledge(alarm.id)}
               className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transform transition active:scale-95 text-xl"
             >
-              SILENCE
+              {t.silence}
             </button>
           </div>
         ))}
@@ -146,7 +150,7 @@ export function AlarmManager() {
             onClick={handleAcknowledgeAll}
             className="mt-4 bg-slate-900 hover:bg-black text-white font-bold py-3 px-6 rounded-lg shadow-xl mx-auto"
           >
-            Acknowledge All ({unacknowledgedAlarms.length})
+            {t.acknowledgeAll} ({unacknowledgedAlarms.length})
           </button>
         )}
       </div>

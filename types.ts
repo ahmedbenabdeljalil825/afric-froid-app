@@ -397,6 +397,15 @@ export interface Translation {
   exportCsvValue: string;
   exportCsvVariable: string;
   exportCsvUnit: string;
+  systemAlarm: string;
+  time: string;
+  message: string;
+  variable: string;
+  pending: string;
+  silence: string;
+  acknowledgeAll: string;
+  triggered: string;
+  ackd: string;
 }
 
 

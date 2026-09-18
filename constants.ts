@@ -189,6 +189,15 @@ export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
     exportCsvValue: 'value',
     exportCsvVariable: 'variable',
     exportCsvUnit: 'unit',
+    systemAlarm: 'System Alarm',
+    time: 'Time',
+    message: 'Message',
+    variable: 'Variable',
+    pending: 'Pending',
+    silence: 'SILENCE',
+    acknowledgeAll: 'Acknowledge All',
+    triggered: 'Triggered',
+    ackd: "Ack'd",
   },
   fr: {
     // Navigation & Sessions
@@ -366,5 +375,14 @@ export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
     exportCsvValue: 'valeur',
     exportCsvVariable: 'variable',
     exportCsvUnit: 'unite',
+    systemAlarm: 'Alarme Système',
+    time: 'Heure',
+    message: 'Message',
+    variable: 'Variable',
+    pending: 'En attente',
+    silence: 'SILENCE',
+    acknowledgeAll: 'Tout acquitter',
+    triggered: 'Déclenchée',
+    ackd: "Acquitté",
   }
 };

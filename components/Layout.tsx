@@ -103,6 +103,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
               <>
                 <NavItem path="/dashboard" icon={LayoutDashboard} label={t.dashboard} />
                 <NavItem path="/controls" icon={Activity} label={t.controls} />
+                <NavItem path="/alarms" icon={Bell} label={t.alarmHistory} />
                 <NavItem path="/settings" icon={Settings} label={t.settings} />
                 <NavItem path="/about" icon={Info} label={t.about} />
               </>

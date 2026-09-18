@@ -13,6 +13,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUserDesigner = lazy(() => import('./pages/AdminUserDesigner'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Login = lazy(() => import('./pages/Login'));
+const AlarmHistory = lazy(() => import('./pages/AlarmHistory'));
 
 // Corporate pages
 const CorporatePages = import('./pages/CorporatePages');
@@ -54,7 +55,7 @@ const AppContent: React.FC<{
 
   return (
     <Suspense fallback={<GlobalLoader />}>
-      {currentUser && currentUser.role !== UserRole.ADMIN && <AlarmManager />}
+      {currentUser && currentUser.role !== UserRole.ADMIN && <AlarmManager user={currentUser} />}
       <AnimatePresence mode="wait">
         <Routes location={location}>
           <Route
@@ -84,6 +85,7 @@ const AppContent: React.FC<{
                 <>
                   <Route path="/dashboard" element={<PageTransition><ClientDashboard user={currentUser} /></PageTransition>} />
                   <Route path="/controls" element={<PageTransition><ClientControls user={currentUser} /></PageTransition>} />
+                  <Route path="/alarms" element={<PageTransition><AlarmHistory user={currentUser} /></PageTransition>} />
                 </>
               )}
 

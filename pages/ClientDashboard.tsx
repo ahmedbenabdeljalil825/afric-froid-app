@@ -4,7 +4,6 @@ import { mqttService } from '../services/mqttService';
 import { TRANSLATIONS } from '../constants';
 import { supabase } from '../services/supabase';
 import { WidgetRenderer } from '../components/WidgetRenderer';
-import { AlarmHistoryTable } from '../components/AlarmHistoryTable';
 import { buildLineChartSeries, downsampleSeries } from '../utils/chartSeries';
 
 const CHART_HISTORY_REFRESH_MS = 45_000;
@@ -314,7 +313,6 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
           })}
         </div>
       )}
-      <AlarmHistoryTable userId={user.id} />
     </div>
   );
 };
