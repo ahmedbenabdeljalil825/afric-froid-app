@@ -54,7 +54,7 @@ const AppContent: React.FC<{
 
   return (
     <Suspense fallback={<GlobalLoader />}>
-      {currentUser && <AlarmManager />}
+      {currentUser && currentUser.role !== UserRole.ADMIN && <AlarmManager />}
       <AnimatePresence mode="wait">
         <Routes location={location}>
           <Route
@@ -228,6 +228,7 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
 
 
