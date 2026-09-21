@@ -149,6 +149,7 @@ const LineChartWidget: React.FC<{
     language: Language;
     showExportButton?: boolean;
 }> = ({ widget, colorIndex, historyData, timeRange = '1', onRangeChange, language, showExportButton = true }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const t = TRANSLATIONS[language];
     const [exporting, setExporting] = useState(false);
@@ -955,6 +956,7 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
 const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
     const [draftVal, setDraftVal] = useState<number>(0);
     const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
@@ -1010,6 +1012,7 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
 const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
     const [draftVal, setDraftVal] = useState('');
     const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
@@ -1056,6 +1059,7 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
 const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
     const [draftVal, setDraftVal] = useState<number>(0);
     const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
@@ -1125,6 +1129,7 @@ const TimePickerWidget: React.FC<{ widget: Widget; colorIndex: number; language:
 const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
     const [draftVal, setDraftVal] = useState<string>('');
     const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
@@ -1171,6 +1176,7 @@ const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
 const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
     const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
+    const t = TRANSLATIONS[language];
     const [draftVal, setDraftVal] = useState<string>('');
     const [isDirty, setIsDirty] = useState(false);
     const pubTopic = getPublishTopic(widget);
