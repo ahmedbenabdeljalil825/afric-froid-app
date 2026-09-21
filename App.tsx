@@ -6,6 +6,7 @@ import PageTransition from './components/PageTransition';
 import GlobalLoader from './components/GlobalLoader';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AlarmManager } from './components/AlarmManager';
+import { UpdatePrompt } from './components/UpdatePrompt';
 
 // Lazy load pages for better performance and to show transitions during network delay
 const ClientDashboard = lazy(() => import('./pages/ClientDashboard'));
@@ -60,7 +61,7 @@ const AppContent: React.FC<{
       <Suspense fallback={<GlobalLoader />}>
         {currentUser && currentUser.role !== UserRole.ADMIN && <AlarmManager user={currentUser} />}
       <AnimatePresence mode="wait">
-        <Routes location={location}>
+        <Routes location={location} key={location.pathname}>
           <Route
             path="/login"
             element={
@@ -106,6 +107,7 @@ const AppContent: React.FC<{
           )}
         </Routes>
       </AnimatePresence>
+      <UpdatePrompt />
     </Suspense>
     </ErrorBoundary>
   );

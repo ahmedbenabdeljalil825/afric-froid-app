@@ -41,7 +41,7 @@ const AdminDashboard: React.FC = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, company_id, full_name, role, is_active, config, mqtt_config, language, password');
+      .select('id, company_id, full_name, role, is_active, config, mqtt_config, language');
 
     if (error) {
       console.error('Error fetching profiles:', error);
@@ -55,7 +55,6 @@ const AdminDashboard: React.FC = () => {
         config: d.config as UserConfig,
         mqttConfig: d.mqtt_config as MqttConfig,
         language: d.language,
-        password: d.password
       }));
       setUsers(mappedUsers);
     }
@@ -380,7 +379,7 @@ const AdminDashboard: React.FC = () => {
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">User</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Role</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Status</th>
-                <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Password</th>
+                <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Security</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm">Widgets</th>
                 <th className="px-6 py-4 font-semibold text-slate-700 text-sm text-right">Actions</th>
               </tr>
@@ -419,9 +418,9 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <code className="text-xs bg-slate-100 px-1 py-0.5 rounded text-slate-600">
-                        {user.password || '••••••'}
-                      </code>
+                      <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-500 font-mono tracking-widest">
+                        ••••••••
+                      </span>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-xs text-slate-500">
@@ -474,8 +473,8 @@ const AdminDashboard: React.FC = () => {
 
       {/* User Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 fade-in duration-200">
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-900">
                 {editingUser ? 'Edit User' : 'Create New User'}

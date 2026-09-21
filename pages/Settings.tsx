@@ -42,17 +42,6 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
       if (updateError) {
         setError(updateError.message);
       } else {
-        // Also update the password in the public.profiles table for dashboard visibility
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ password: newPassword })
-          .eq('id', user.id);
-
-        if (profileError) {
-          console.error('Error syncing password to profile table:', profileError);
-          // We don't block success if Auth succeeded, but we should know
-        }
-
         setSuccess(true);
         // Sync updated user object back to parent so App state stays fresh
         onUpdateUser(user);

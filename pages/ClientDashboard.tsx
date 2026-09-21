@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { User, Widget, ReadingWidgetType, WidgetCategory } from '../types';
 import { mqttService } from '../services/mqttService';
 import { TRANSLATIONS } from '../constants';
@@ -295,7 +296,11 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
                 ? buildLineChartSeries(historicalFetchData[widget.id], val, hours)
                 : undefined;
               return (
-                <div key={widget.id} className={widgetSpanClass(isWideWidget(widget))}>
+                <div 
+                  key={widget.id} 
+                  className={`${widgetSpanClass(isWideWidget(widget))} animate-in fade-in slide-in-from-bottom-2`}
+                  style={{ animationDelay: `${(index % 8) * 60}ms` }}
+                >
                   <WidgetRenderer
                     widget={widget}
                     language={user.language}
@@ -336,7 +341,7 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
               const isCtrlOpen = openControllers[ctrl] === true || (openControllers[ctrl] === undefined && ctrl === controllerNames[0]);
               const systemNames = Object.keys(grouped[ctrl]);
               return (
-                <div key={ctrl} className="rounded-2xl border border-slate-200/60 bg-white/60 backdrop-blur-sm shadow-sm overflow-hidden">
+                <div key={ctrl} className="rounded-2xl border border-slate-200/60 bg-white/60 backdrop-blur-sm shadow-sm overflow-hidden transition-all duration-300">
                   {/* Controller Header */}
                   <button
                     className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50/80 transition-colors"
@@ -355,36 +360,58 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
                   </button>
 
                   {/* Controller Body */}
-                  {isCtrlOpen && (
-                    <div className="px-6 pb-6 space-y-5 border-t border-slate-100">
-                      {systemNames.map(sys => {
-                        const sysKey = `${ctrl}::${sys}`;
-                        const isSysOpen = openSystems[sysKey] === true || (openSystems[sysKey] === undefined && sys === systemNames[0] && ctrl === controllerNames[0]);
-                        const sysWidgets = grouped[ctrl][sys];
-                        const offset = globalColorOffset;
-                        globalColorOffset += sysWidgets.length;
-                        return (
-                          <div key={sys} className="pt-4">
-                            {/* System Sub-header */}
-                            <button
-                              className="flex items-center gap-2 mb-3 group w-full text-left"
-                              onClick={() => setOpenSystems(prev => ({ ...prev, [sysKey]: !prev[sysKey] }))}
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                              <span className="text-sm font-bold text-slate-700 group-hover:text-[#002060] transition-colors">{sys}</span>
-                              <span className="text-[10px] text-slate-400 font-medium">
-                                ({sysWidgets.length} {sysWidgets.length === 1 ? 'widget' : 'widgets'})
-                              </span>
-                              <svg className={`w-3 h-3 text-slate-300 ml-auto transition-transform duration-200 ${isSysOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                              </svg>
-                            </button>
-                            {isSysOpen && renderWidgetGrid(sysWidgets, offset)}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <AnimatePresence initial={false}>
+                    {isCtrlOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-6 pb-6 space-y-5 border-t border-slate-100">
+                          {systemNames.map(sys => {
+                            const sysKey = `${ctrl}::${sys}`;
+                            const isSysOpen = openSystems[sysKey] === true || (openSystems[sysKey] === undefined && sys === systemNames[0] && ctrl === controllerNames[0]);
+                            const sysWidgets = grouped[ctrl][sys];
+                            const offset = globalColorOffset;
+                            globalColorOffset += sysWidgets.length;
+                            return (
+                              <div key={sys} className="pt-4">
+                                {/* System Sub-header */}
+                                <button
+                                  className="flex items-center gap-2 mb-3 group w-full text-left"
+                                  onClick={() => setOpenSystems(prev => ({ ...prev, [sysKey]: !prev[sysKey] }))}
+                                >
+                                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                  <span className="text-sm font-bold text-slate-700 group-hover:text-[#002060] transition-colors">{sys}</span>
+                                  <span className="text-[10px] text-slate-400 font-medium">
+                                    ({sysWidgets.length} {sysWidgets.length === 1 ? 'widget' : 'widgets'})
+                                  </span>
+                                  <svg className={`w-3 h-3 text-slate-300 ml-auto transition-transform duration-200 ${isSysOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </button>
+                                <AnimatePresence initial={false}>
+                                  {isSysOpen && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: 'auto' }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      transition={{ duration: 0.2, ease: 'easeInOut' }}
+                                      className="overflow-hidden"
+                                    >
+                                      {renderWidgetGrid(sysWidgets, offset)}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
