@@ -4,6 +4,14 @@ All notable changes to the AfricFroid project (Web Dashboard, Android App, Telem
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-21
+
+### Added
+- **Web Dashboard**: Multi-System / Multi-Controller Dashboard Grouping. Clients with multiple controllers or multiple systems per controller now see a 3-layer collapsible accordion (Controller → System → Widgets) instead of a flat widget grid.
+- **Web Dashboard (Admin)**: Widget Designer modal now includes optional `Controller Name` and `System Name` fields. Values are stored inside the existing `config` JSONB column — zero database schema changes required.
+- **Web Dashboard (Admin)**: Sidebar widget cards now display violet and amber grouping badges when a widget is assigned to a controller/system, for at-a-glance visibility.
+- **Web Dashboard**: Backward-compatible — clients with no grouping tags set continue to see the original flat grid layout with no visual change.
+
 ## [1.2.0] - 2026-09-18
 
 ### Added

@@ -52,7 +52,9 @@ const AdminUserDesigner: React.FC = () => {
         alarmEnabled: false,
         alarmMin: undefined,
         alarmMax: undefined,
-        historyInterval: 10
+        historyInterval: 10,
+        controllerName: '',
+        systemName: '',
     });
 
     useEffect(() => {
@@ -118,7 +120,9 @@ const AdminUserDesigner: React.FC = () => {
                 alarmEnabled: w.alarm_enabled,
                 alarmMin: w.alarm_min,
                 alarmMax: w.alarm_max,
-                historyInterval: w.history_interval
+                historyInterval: w.history_interval,
+                controllerName: w.config?.controllerName || '',
+                systemName: w.config?.systemName || '',
             })));
         }
     };
@@ -144,7 +148,9 @@ const AdminUserDesigner: React.FC = () => {
                 alarmEnabled: false,
                 alarmMin: undefined,
                 alarmMax: undefined,
-                historyInterval: 10
+                historyInterval: 10,
+                controllerName: '',
+                systemName: '',
             });
         }
         setIsWidgetModalOpen(true);
@@ -175,7 +181,11 @@ const AdminUserDesigner: React.FC = () => {
                         retain: widgetForm.retain || false,
                         variable_name: widgetForm.variableName,
                         data_label: widgetForm.dataLabel,
-                        config: widgetForm.config,
+                        config: {
+                            ...widgetForm.config,
+                            ...(widgetForm.controllerName ? { controllerName: widgetForm.controllerName } : {}),
+                            ...(widgetForm.systemName ? { systemName: widgetForm.systemName } : {}),
+                        },
                         is_active: widgetForm.isActive,
                         alarm_enabled: widgetForm.alarmEnabled,
                         alarm_min: widgetForm.alarmMin,
@@ -200,7 +210,11 @@ const AdminUserDesigner: React.FC = () => {
                         retain: widgetForm.retain || false,
                         variable_name: widgetForm.variableName,
                         data_label: widgetForm.dataLabel,
-                        config: widgetForm.config || {},
+                        config: {
+                            ...(widgetForm.config || {}),
+                            ...(widgetForm.controllerName ? { controllerName: widgetForm.controllerName } : {}),
+                            ...(widgetForm.systemName ? { systemName: widgetForm.systemName } : {}),
+                        },
                         position: widgets.length,
                         is_active: widgetForm.isActive ?? true,
                         alarm_enabled: widgetForm.alarmEnabled ?? false,
@@ -431,6 +445,20 @@ const AdminUserDesigner: React.FC = () => {
                                                 <p className="text-slate-500 font-mono truncate" title={widget.variableName}>
                                                     🔍 {widget.variableName}
                                                 </p>
+                                                {(widget.controllerName || widget.systemName) && (
+                                                    <div className="flex items-center gap-1 flex-wrap mt-1">
+                                                        {widget.controllerName && (
+                                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-violet-100 text-violet-700">
+                                                                🖥 {widget.controllerName}
+                                                            </span>
+                                                        )}
+                                                        {widget.systemName && (
+                                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
+                                                                ⚙ {widget.systemName}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                             <label className="flex items-center gap-2 mt-3 cursor-pointer">
                                                 <input
@@ -547,6 +575,36 @@ const AdminUserDesigner: React.FC = () => {
                                     value={widgetForm.name || ''}
                                     onChange={e => setWidgetForm({ ...widgetForm, name: e.target.value })}
                                 />
+                            </div>
+
+                            {/* Grouping Fields */}
+                            <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <div>
+                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                                        Controller Name
+                                        <InfoTooltip title="Controller Name" content="Group widgets by physical controller (e.g. 'Main PLC'). Leave blank if the client has only one controller." />
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none text-sm"
+                                        placeholder="e.g., Main PLC"
+                                        value={widgetForm.controllerName || ''}
+                                        onChange={e => setWidgetForm({ ...widgetForm, controllerName: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-2">
+                                        System Name
+                                        <InfoTooltip title="System Name" content="Sub-group within a controller (e.g. 'Cold Room 1'). Leave blank if the controller manages only one system." />
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-frost-500 outline-none text-sm"
+                                        placeholder="e.g., Cold Room 1"
+                                        value={widgetForm.systemName || ''}
+                                        onChange={e => setWidgetForm({ ...widgetForm, systemName: e.target.value })}
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

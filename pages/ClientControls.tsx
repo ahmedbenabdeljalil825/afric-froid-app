@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { User, Widget, ReadingWidgetType, WidgetCategory } from '../types';
 import { mqttService } from '../services/mqttService';
 import { TRANSLATIONS } from '../constants';
@@ -33,6 +33,8 @@ function mapDbWidget(w: any): Widget {
     alarmMin: w.alarm_min,
     alarmMax: w.alarm_max,
     historyInterval: w.history_interval ?? 10,
+    controllerName: w.config?.controllerName || '',
+    systemName: w.config?.systemName || '',
   };
 }
 
@@ -47,6 +49,8 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
   const [historyData, setHistoryData] = useState<Record<string, any[]>>({});
   const [timeRanges, setTimeRanges] = useState<Record<string, string>>({});
   const [loadingWidgets, setLoadingWidgets] = useState(true);
+  const [openControllers, setOpenControllers] = useState<Record<string, boolean>>({});
+  const [openSystems, setOpenSystems] = useState<Record<string, boolean>>({});
   const t = TRANSLATIONS[user.language];
   const reloadLineChartsRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -214,40 +218,109 @@ const ClientControls: React.FC<ClientControlsProps> = ({ user }) => {
       </div>
 
       {/* Dynamic Widgets Rendered Here */}
-      {widgets.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr mb-12">
-          {widgets.map((widget, index) => {
-             const rTopic = (widget.config as any)?.readTopic || widget.mqttTopic; const rVar = (widget.config as any)?.readVariableName || widget.variableName; const val = liveData[rTopic] && liveData[rTopic][rVar] !== undefined ? liveData[rTopic][rVar] : undefined;
-             const isLarge = isWideWidget(widget);
-             
-             // Merge history and live data for charts
-             const range = timeRanges[widget.id] || '1';
-             const history = historyData[widget.id] || [];
-             const hours = parseInt(range, 10) || 1;
-             const lineSeries =
-               widget.widgetType === ReadingWidgetType.LINE_CHART
-                 ? buildLineChartSeries(history, val, hours)
-                 : undefined;
+      {widgets.length > 0 && (() => {
+        const renderWidgetGrid = (widgetList: Widget[], globalOffset: number) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-fr mb-12">
+            {widgetList.map((widget, index) => {
+              const rTopic = (widget.config as any)?.readTopic || widget.mqttTopic;
+              const rVar = (widget.config as any)?.readVariableName || widget.variableName;
+              const val = liveData[rTopic] && liveData[rTopic][rVar] !== undefined ? liveData[rTopic][rVar] : undefined;
+              const range = timeRanges[widget.id] || '1';
+              const history = historyData[widget.id] || [];
+              const hours = parseInt(range, 10) || 1;
+              const lineSeries = widget.widgetType === ReadingWidgetType.LINE_CHART
+                ? buildLineChartSeries(history, val, hours)
+                : undefined;
+              return (
+                <div key={widget.id} className={widgetSpanClass(isWideWidget(widget))}>
+                  <WidgetRenderer
+                    widget={widget}
+                    language={user.language}
+                    colorIndex={globalOffset + index}
+                    currentData={val}
+                    historyData={widget.widgetType === ReadingWidgetType.LINE_CHART ? lineSeries : undefined}
+                    timeRange={range}
+                    onRangeChange={(r: string) => handleRangeChange(widget.id, r)}
+                    isPreview={false}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        );
 
-             return (
-               <div key={widget.id} className={widgetSpanClass(isLarge)}>
-                 <WidgetRenderer
-                   widget={widget}
-                   language={user.language}
-                   colorIndex={index}
-                   currentData={val}
-                   historyData={
-                     widget.widgetType === ReadingWidgetType.LINE_CHART ? lineSeries : undefined
-                   }
-                   timeRange={range}
-                   onRangeChange={(r: string) => handleRangeChange(widget.id, r)}
-                   isPreview={false}
-                 />
-               </div>
-             );
-          })}
-        </div>
-      )}
+        const hasGrouping = widgets.some(w => w.controllerName || w.systemName);
+        if (!hasGrouping) return renderWidgetGrid(widgets, 0);
+
+        const grouped: Record<string, Record<string, Widget[]>> = {};
+        widgets.forEach(w => {
+          const ctrl = w.controllerName || 'General';
+          const sys = w.systemName || 'General';
+          if (!grouped[ctrl]) grouped[ctrl] = {};
+          if (!grouped[ctrl][sys]) grouped[ctrl][sys] = [];
+          grouped[ctrl][sys].push(w);
+        });
+
+        const controllerNames = Object.keys(grouped);
+
+        let globalColorOffset = 0;
+        return (
+          <div className="space-y-4 mb-12">
+            {controllerNames.map(ctrl => {
+              const isCtrlOpen = openControllers[ctrl] === true || (openControllers[ctrl] === undefined && ctrl === controllerNames[0]);
+              const systemNames = Object.keys(grouped[ctrl]);
+              return (
+                <div key={ctrl} className="rounded-2xl border border-slate-200/60 bg-white/60 backdrop-blur-sm shadow-sm overflow-hidden">
+                  <button
+                    className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50/80 transition-colors"
+                    onClick={() => setOpenControllers(prev => ({ ...prev, [ctrl]: !prev[ctrl] }))}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-[#009fe3]" />
+                      <span className="font-black text-[#002060] text-base tracking-tight">{ctrl}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-full">
+                        {systemNames.length} {systemNames.length === 1 ? 'system' : 'systems'}
+                      </span>
+                    </div>
+                    <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isCtrlOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {isCtrlOpen && (
+                    <div className="px-6 pb-6 space-y-5 border-t border-slate-100">
+                      {systemNames.map(sys => {
+                        const sysKey = `${ctrl}::${sys}`;
+                        const isSysOpen = openSystems[sysKey] === true || (openSystems[sysKey] === undefined && sys === systemNames[0] && ctrl === controllerNames[0]);
+                        const sysWidgets = grouped[ctrl][sys];
+                        const offset = globalColorOffset;
+                        globalColorOffset += sysWidgets.length;
+                        return (
+                          <div key={sys} className="pt-4">
+                            <button
+                              className="flex items-center gap-2 mb-3 group w-full text-left"
+                              onClick={() => setOpenSystems(prev => ({ ...prev, [sysKey]: !prev[sysKey] }))}
+                            >
+                              <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                              <span className="text-sm font-bold text-slate-700 group-hover:text-[#002060] transition-colors">{sys}</span>
+                              <span className="text-[10px] text-slate-400 font-medium">
+                                ({sysWidgets.length} {sysWidgets.length === 1 ? 'widget' : 'widgets'})
+                              </span>
+                              <svg className={`w-3 h-3 text-slate-300 ml-auto transition-transform duration-200 ${isSysOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+                            {isSysOpen && renderWidgetGrid(sysWidgets, offset)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 };

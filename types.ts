@@ -74,6 +74,10 @@ export interface Widget {
 
   // Telemetry Configuration
   historyInterval?: number; // Target flux interval in seconds (default 10)
+
+  // Grouping / Multi-System Support (Option A: stored inside config JSONB, surfaced here for TypeScript)
+  controllerName?: string; // e.g. "Main PLC", "Compressor Unit 2"
+  systemName?: string;     // e.g. "Cold Room 1", "Condenser Loop"
 }
 
 export interface Alarm {
@@ -218,6 +222,16 @@ export interface PLCTelemetry {
 }
 
 export interface Translation {
+  actualState: string;
+  activate: string;
+  state: string;
+  sendCommand: string;
+  send: string;
+  enterText: string;
+  actual: string;
+  sendUpdate: string;
+  colorPickerPending: string;
+  timePickerPending: string;
   // Navigation & Sessions
   dashboard: string;
   controls: string;
@@ -228,6 +242,7 @@ export interface Translation {
   terms: string;
   privacy: string;
   welcome: string;
+  error: string;
 
   // Login Page
   clientPortal: string;
