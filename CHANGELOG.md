@@ -4,6 +4,14 @@ All notable changes to the AfricFroid project (Web Dashboard, Android App, Telem
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-09-21
+
+### Added
+- **Android App**: Fully integrated `@capacitor/push-notifications` with Firebase Cloud Messaging (FCM). 
+- **Android App**: App automatically requests push permissions and registers the device FCM token to the user's Supabase profile upon login.
+- **Telemetry Bridge (v1.2.0)**: Integrated `firebase-admin`. The bridge now intercepts MQTT alarms and dispatches real-time push notifications to the affected user's Android device.
+- **Android Build**: Generated `google-services.json` and finalized the Capacitor Android configuration.
+
 ## [1.3.0] - 2026-09-21
 
 ### Added

@@ -25,6 +25,7 @@ import { User, UserRole, UserConfig, MqttConfig } from './types';
 import { mqttService } from './services/mqttService';
 import { DEFAULT_USER_CONFIG } from './constants';
 import { supabase } from './services/supabase';
+import { pushService } from './services/pushService';
 import { ToastProvider } from './components/ToastProvider';
 import { ConfirmProvider } from './components/ConfirmProvider';
 
@@ -181,6 +182,9 @@ const App: React.FC = () => {
         if (user.mqttConfig) {
           mqttService.connect(user.mqttConfig);
         }
+        
+        // Register for push notifications if on native Android
+        pushService.register(user.id);
       }
     } catch (err) {
       console.error('Unexpected error fetching profile:', err);

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "685156186001",
+    "project_id": "africfroid-iiot",
+    "storage_bucket": "africfroid-iiot.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:685156186001:android:bc3311caf36a2701c14c30",
+        "android_client_info": {
+          "package_name": "com.africfroid.dashboard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCU09zhmqzru0AlrC49F8DA_ku_MyxWU4U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

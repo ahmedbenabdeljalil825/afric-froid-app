@@ -14,6 +14,16 @@ export const DEFAULT_USER_CONFIG: UserConfig = {
 
 export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
   en: {
+      actualState: 'Actual State',
+      activate: 'ACTIVATE',
+      state: 'STATE',
+      send: 'Send',
+      enterText: 'Enter text...',
+      actual: 'Actual',
+      sendUpdate: 'Send Update',
+      colorPickerPending: 'Color Picker (Pending Split UI)',
+      timePickerPending: 'Time Picker (Pending Split UI)',
+
     // Navigation & Sessions
     dashboard: 'Dashboard',
     controls: 'Controls',
@@ -24,6 +34,7 @@ export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
     terms: 'Terms of Service',
     privacy: 'Privacy Policy',
     welcome: 'Welcome back',
+    error: 'ERROR',
 
     // Login Page
     clientPortal: 'Client Portal',
@@ -200,6 +211,16 @@ export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
     ackd: "Ack'd",
   },
   fr: {
+      actualState: 'État Actuel',
+      activate: 'ACTIVER',
+      state: 'ÉTAT',
+      send: 'Envoyer',
+      enterText: 'Saisir texte...',
+      actual: 'Actuel',
+      sendUpdate: 'Envoyer Mise à jour',
+      colorPickerPending: 'Sélecteur de Couleur (En attente)',
+      timePickerPending: 'Sélecteur d\'Heure (En attente)',
+
     // Navigation & Sessions
     dashboard: 'Tableau de bord',
     controls: 'Commandes',
@@ -210,6 +231,7 @@ export const TRANSLATIONS: Record<'en' | 'fr', Translation> = {
     terms: 'Conditions d\'utilisation',
     privacy: 'Politique de confidentialité',
     welcome: 'Bon retour',
+    error: 'ERREUR',
 
     // Login Page
     clientPortal: 'Portail Client',

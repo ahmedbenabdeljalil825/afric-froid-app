@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+
+export const ClientContext = React.createContext<boolean>(false);
 import {
     AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
@@ -270,10 +272,10 @@ const LineChartWidget: React.FC<{
                                 {exportBanner.text}
                             </div>
                         )}
-                        <InfoTooltip
+                        {!isClient && <InfoTooltip
                             title={t.configuration}
                             content={`${mqttTopicVariableTooltip(t, widget)}\n${dbHint}`}
-                        />
+                        />}
                     </div>
                 </div>
             </div>
@@ -353,6 +355,7 @@ const LineChartWidget: React.FC<{
 
 // ── Bar Chart Widget ──
 const BarChartWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const data = [{ name: TRANSLATIONS[language].live, value: currentValue || 0 }];
     const color = getColor(colorIndex);
     const t = TRANSLATIONS[language];
@@ -371,10 +374,10 @@ const BarChartWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
                     <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${color.bg} ${color.text} shadow-sm border ${color.border}/50`}>
                         {t.live.toUpperCase()}
                     </div>
-                    <InfoTooltip
+                    {!isClient && <InfoTooltip
                         title={t.configuration}
                         content={mqttTopicVariableTooltip(t, widget)}
-                    />
+                    />}
                 </div>
             </div>
             <div className="h-[180px] mt-auto">
@@ -396,6 +399,7 @@ const BarChartWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
 
 // ── Gauge Widget (SVG) ──
 const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const value = currentValue || 0;
     const config = widget.config as GaugeConfig;
@@ -429,14 +433,16 @@ const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?:
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center group text-center">
             <div className="flex items-center gap-2 mb-1">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
+                {!isClient && <InfoTooltip
                     title={t.configuration}
                     content={mqttTopicVariableTooltip(t, widget)}
-                />
+                />}
             </div>
+            {(!isClient || widget.dataLabel) && (
             <p className="text-[10px] text-slate-500 font-bold font-mono mb-4 uppercase tracking-tighter opacity-100">
                 {widget.dataLabel || widget.variableName}
             </p>
+        )}
             
             <div className="w-[160px] h-[90px] mt-2 relative">
                 <svg viewBox="0 0 200 120" className="w-full h-full overflow-visible">
@@ -484,6 +490,7 @@ const GaugeWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?:
 
 // ── LED Indicator Widget ──
 const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const config = (widget.config || {}) as any;
     const t = TRANSLATIONS[language];
     
@@ -528,10 +535,10 @@ const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; current
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
             <div className="flex items-center gap-2 mb-6">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
+                {!isClient && <InfoTooltip
                     title={t.configuration}
                     content={mqttTopicVariableTooltip(t, widget)}
-                />
+                />}
             </div>
             <div className={`w-20 h-20 rounded-full shadow-2xl relative transition-all duration-700 ${status ? `${bgColorClass} scale-110` : 'bg-slate-200 shadow-inner scale-100'}`}>
                 {status && (
@@ -542,13 +549,18 @@ const LEDIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; current
             <p className={`mt-6 text-xs font-black tracking-[0.2em] transition-colors duration-500 ${status ? textColorClass : 'text-slate-500'}`}>
                 {status ? activeLabel.toUpperCase() : inactiveLabel.toUpperCase()}
             </p>
-            <p className="text-[10px] text-slate-500 font-mono mt-1">{widget.dataLabel || widget.variableName}</p>
+            {(!isClient || widget.dataLabel) && (
+            <p className="text-[10px] text-slate-500 font-mono mt-1">
+                {widget.dataLabel || widget.variableName}
+            </p>
+        )}
         </div>
     );
 };
 
 // ── Progress Bar Widget ──
 const ProgressBarWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const config = widget.config as GaugeConfig;
     const value = currentValue || 0;
@@ -581,12 +593,16 @@ const ProgressBarWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
                 <div>
                     <div className="flex items-center gap-2">
                         <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                        <InfoTooltip
+                        {!isClient && <InfoTooltip
                             title={t.configuration}
                             content={mqttTopicVariableTooltip(t, widget)}
-                        />
+                        />}
                     </div>
-                    <p className="text-[10px] text-slate-600 font-bold font-mono mt-1 opacity-100 tracking-tight">{widget.dataLabel || widget.variableName}</p>
+                    {(!isClient || widget.dataLabel) && (
+                        <p className="text-[10px] text-slate-600 font-bold font-mono mt-1 opacity-100 tracking-tight">
+                            {widget.dataLabel || widget.variableName}
+                        </p>
+                    )}
                 </div>
                 <div className="text-right shrink-0 ml-4">
                     <span className="text-2xl font-black text-slate-900">{value}</span>
@@ -611,6 +627,7 @@ const ProgressBarWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
 
 // ── Text Log Widget ──
 const TextLogWidget: React.FC<{ widget: Widget; colorIndex: number; liveLogs?: any[]; language: Language }> = ({ widget, colorIndex, liveLogs, language }) => {
+    const isClient = React.useContext(ClientContext);
     const logs = liveLogs || [
         { time: new Date().toLocaleTimeString(), msg: TRANSLATIONS[language].awaitingData }
     ];
@@ -623,10 +640,10 @@ const TextLogWidget: React.FC<{ widget: Widget; colorIndex: number; liveLogs?: a
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                     <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">{widget.name}</h4>
                 </div>
-                <InfoTooltip
+                {!isClient && <InfoTooltip
                     title={t.configuration}
                     content={mqttTopicVariableTooltip(t, widget)}
-                />
+                />}
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 font-mono text-[11px] custom-scrollbar pr-2">
                 {logs.map((log, i) => (
@@ -644,12 +661,13 @@ const TextLogWidget: React.FC<{ widget: Widget; colorIndex: number; liveLogs?: a
 
 // ── Multi-State Indicator Widget ──
 const MultiStateIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const config = widget.config as MultiStateConfig;
     const t = TRANSLATIONS[language];
     const states = config?.states || [
         { value: '0', label: t.off, color: '#64748b' },
         { value: '1', label: t.active, color: '#10b981' },
-        { value: '2', label: 'ERROR', color: '#ef4444' }
+        { value: '2', label: t.error, color: '#ef4444' }
     ];
     const value = currentValue?.toString() || '0';
     const currentState = states.find(s => s.value === value) || states[0];
@@ -658,10 +676,10 @@ const MultiStateIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; 
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
             <div className="flex items-center gap-2 mb-6">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
+                {!isClient && <InfoTooltip
                     title={t.configuration}
                     content={mqttTopicVariableTooltip(t, widget)}
-                />
+                />}
             </div>
             <div
                 style={{ backgroundColor: currentState.color }}
@@ -678,6 +696,7 @@ const MultiStateIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; 
 
 // ── Circular Progress Widget ──
 const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: number; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const config = widget.config as GaugeConfig;
     const value = currentValue || 0;
@@ -703,10 +722,10 @@ const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; cur
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
             <div className="flex items-center gap-2 mb-4">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
+                {!isClient && <InfoTooltip
                     title={t.configuration}
                     content={mqttTopicVariableTooltip(t, widget)}
-                />
+                />}
             </div>
             <div className="relative w-32 h-32 transform transition-transform duration-700 group-hover:scale-110">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
@@ -728,9 +747,11 @@ const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; cur
                     <span className="text-[10px] text-slate-500 font-black uppercase tracking-tighter">{config?.unit}</span>
                 </div>
             </div>
+            {(!isClient || widget.dataLabel) && (
             <p className="text-[10px] text-slate-500 font-black font-mono mt-4 uppercase tracking-tighter opacity-100">
                 {widget.dataLabel || widget.variableName}
             </p>
+        )}
         </div>
     );
 };
@@ -738,6 +759,7 @@ const CircularProgressWidget: React.FC<{ widget: Widget; colorIndex: number; cur
 
 // ── Text Display Widget ──
 const TextDisplayWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const t = TRANSLATIONS[language];
 
@@ -751,18 +773,20 @@ const TextDisplayWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
                         <Activity size={16} className={color.text} />
                         <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
                     </div>
-                    <InfoTooltip
+                    {!isClient && <InfoTooltip
                         title={t.configuration}
                         content={mqttTopicVariableTooltip(t, widget)}
-                    />
+                    />}
                 </div>
                 <div className="mt-8 flex items-baseline gap-2">
                     <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{currentValue ?? '---'}</h3>
                     <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{widget.dataLabel || t.units}</span>
                 </div>
-                <p className="text-[10px] font-black font-mono text-slate-500 mt-4 uppercase tracking-tighter opacity-100">
-                    {widget.mqttTopic} → {widget.variableName}
-                </p>
+                {!isClient && (
+                    <p className="text-[10px] font-black font-mono text-slate-500 mt-4 uppercase tracking-tighter opacity-100">
+                        {widget.mqttTopic} → {widget.variableName}
+                    </p>
+                )}
             </div>
         </div>
     );
@@ -770,6 +794,7 @@ const TextDisplayWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
 
 // ── Status Indicator Widget ──
 const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const [blinking, setBlinking] = useState(true);
     const status = currentValue || 'OFFLINE';
@@ -784,10 +809,10 @@ const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; curr
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500 h-full flex flex-col items-center justify-center text-center group">
             <div className="flex items-center gap-2 mb-6">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest">{widget.name}</h4>
-                <InfoTooltip
+                {!isClient && <InfoTooltip
                     title={t.configuration}
                     content={mqttTopicVariableTooltip(t, widget)}
-                />
+                />}
             </div>
             <div className="relative mb-6 transform transition-transform duration-700 group-hover:scale-110">
                 <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl relative z-10" style={{ backgroundColor: color.primary }}>
@@ -798,9 +823,11 @@ const StatusIndicatorWidget: React.FC<{ widget: Widget; colorIndex: number; curr
             <p className={`text-xl font-black tracking-widest transition-colors duration-500 ${status === 'ONLINE' || status === 'RUNNING' ? 'text-emerald-600' : 'text-slate-500'}`}>
                 {status}
             </p>
+            {(!isClient || widget.dataLabel) && (
             <p className="text-[10px] text-slate-500 font-black font-mono mt-2 uppercase tracking-tighter opacity-100">
                 {widget.dataLabel || widget.variableName}
             </p>
+        )}
         </div>
     );
 };
@@ -815,6 +842,7 @@ const getPublishTopic = (widget: Widget) => widget.mqttTopic;
 const getPublishVar = (widget: Widget) => widget.variableName;
 
 const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview?: boolean; currentValue?: any; language: Language }> = ({ widget, colorIndex, isPreview, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const t = TRANSLATIONS[language];
     const pubTopic = getPublishTopic(widget);
@@ -836,7 +864,7 @@ const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview?: b
             </div>
             
             <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 flex items-center justify-between mb-4">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Actual State</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">{t.actualState}</span>
                 <span className="text-xs font-black text-[#002060]">{currentValue !== undefined ? String(currentValue) : '--'}</span>
             </div>
 
@@ -844,13 +872,14 @@ const ButtonWidget: React.FC<{ widget: Widget; colorIndex: number; isPreview?: b
                 onClick={handlePress}
                 className="w-full py-4 px-6 rounded-xl font-bold uppercase tracking-wider text-sm transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg active:scale-95 active:shadow-inner text-white" style={{ backgroundColor: color.primary }}
             >
-                {(widget.config as any).buttonText || 'ACTIVATE'}
+                {(widget.config as any).buttonText || t.activate}
             </button>
         </div>
     );
 };
 
 const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const t = TRANSLATIONS[language];
     const pubTopic = getPublishTopic(widget);
@@ -900,7 +929,7 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                     <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
                 <div className={"px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white " + (actualIsOn ? '' : 'bg-slate-300')} style={actualIsOn ? { backgroundColor: color.primary } : {}}>
-                    STATE: {actualIsOn ? activeLabel.toUpperCase() : inactiveLabel.toUpperCase()}
+                    {t.state}: {actualIsOn ? activeLabel.toUpperCase() : inactiveLabel.toUpperCase()}
                 </div>
             </div>
 
@@ -916,7 +945,7 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                     )}
                 </button>
                 <button onClick={handleSubmit} className="flex items-center gap-2 px-6 py-2 rounded-full bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-colors">
-                    <Send size={12} /> Send Command
+                    <Send size={12} /> {t.sendCommand}
                 </button>
             </div>
         </div>
@@ -924,6 +953,7 @@ const ToggleWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
 };
 
 const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState<number>(0);
     const [isDirty, setIsDirty] = useState(false);
@@ -952,7 +982,7 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                     <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
                 <div className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white" style={{ backgroundColor: color.primary }}>
-                    STATE: {currentValue !== undefined ? Number(currentValue).toFixed(1) : '--'}
+                    {t.state}: {currentValue !== undefined ? Number(currentValue).toFixed(1) : '--'}
                 </div>
             </div>
 
@@ -969,7 +999,7 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
                 <div className="flex justify-between items-center w-full">
                     <span className="text-xs font-bold text-slate-500">{draftVal}</span>
                     <button onClick={handleSubmit} className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800">
-                        <Send size={12} /> Send
+                        <Send size={12} /> {t.send}
                     </button>
                 </div>
             </div>
@@ -978,6 +1008,7 @@ const SliderWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?
 };
 
 const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState('');
     const [isDirty, setIsDirty] = useState(false);
@@ -1002,7 +1033,7 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
                     <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 </div>
                 <div className="text-[10px] text-slate-400 font-bold max-w-[100px] truncate" title={String(currentValue)}>
-                    STATE: {currentValue !== undefined ? String(currentValue) : '--'}
+                    {t.state}: {currentValue !== undefined ? String(currentValue) : '--'}
                 </div>
             </div>
 
@@ -1012,7 +1043,7 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
                     value={draftVal}
                     onChange={(e) => { setDraftVal(e.target.value); setIsDirty(true); }}
                     className="flex-1 w-full px-4 py-2 text-sm rounded-xl border border-slate-200 focus:border-slate-500 outline-none font-medium"
-                    placeholder="Enter text..."
+                    placeholder={t.enterText}
                 />
                 <button onClick={handleSubmit} className="px-4 rounded-xl text-white flex items-center justify-center" style={{ backgroundColor: color.primary }}>
                     <Send size={16} />
@@ -1023,6 +1054,7 @@ const TextInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentVal
 };
 
 const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState<number>(0);
     const [isDirty, setIsDirty] = useState(false);
@@ -1047,7 +1079,7 @@ const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
             </div>
 
             <div className="bg-slate-50/50 p-2 rounded-xl border border-slate-100 flex items-center justify-between mb-4">
-                <span className="text-[10px] text-slate-400 font-bold uppercase">Actual</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase">{t.actual}</span>
                 <span className="text-sm font-black text-[#002060]">{currentValue !== undefined ? Number(currentValue) : '--'}</span>
             </div>
 
@@ -1062,31 +1094,36 @@ const NumberInputWidget: React.FC<{ widget: Widget; colorIndex: number; currentV
                 <button onClick={() => setDraftVal(draftVal + 1)} className="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl font-bold hover:bg-slate-200">+</button>
             </div>
             <button onClick={handleSubmit} className="mt-4 flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800">
-                <Send size={12} /> Send Update
+                <Send size={12} /> {t.sendUpdate}
             </button>
         </div>
     );
 };
 
 const ColorPickerWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
+    const isClient = React.useContext(ClientContext);
+    const t = TRANSLATIONS[language];
     return (
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 h-full flex flex-col items-center justify-center text-slate-500">
             <Info size={32} className="mb-2 opacity-30" />
-            <span className="text-xs font-bold uppercase tracking-widest">Color Picker (Pending Split UI)</span>
+            <span className="text-xs font-bold uppercase tracking-widest">{t.colorPickerPending}</span>
         </div>
     );
 };
 
 const TimePickerWidget: React.FC<{ widget: Widget; colorIndex: number; language: Language }> = ({ widget, colorIndex, language }) => {
+    const isClient = React.useContext(ClientContext);
+    const t = TRANSLATIONS[language];
     return (
         <div className="bg-white/70 backdrop-blur-md rounded-[2rem] p-6 shadow-xl border border-white/20 h-full flex flex-col items-center justify-center text-slate-500">
             <Clock size={32} className="mb-2 opacity-30" />
-            <span className="text-xs font-bold uppercase tracking-widest">Time Picker (Pending Split UI)</span>
+            <span className="text-xs font-bold uppercase tracking-widest">{t.timePickerPending}</span>
         </div>
     );
 };
 
 const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState<string>('');
     const [isDirty, setIsDirty] = useState(false);
@@ -1109,7 +1146,7 @@ const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
             <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 <div className="text-[10px] text-slate-400 font-bold max-w-[100px] truncate" title={String(currentValue)}>
-                    STATE: {currentValue !== undefined ? String(currentValue) : '--'}
+                    {t.state}: {currentValue !== undefined ? String(currentValue) : '--'}
                 </div>
             </div>
 
@@ -1132,6 +1169,7 @@ const ComboBoxWidget: React.FC<{ widget: Widget; colorIndex: number; currentValu
 };
 
 const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; currentValue?: any; language: Language }> = ({ widget, colorIndex, currentValue, language }) => {
+    const isClient = React.useContext(ClientContext);
     const color = getColor(colorIndex);
     const [draftVal, setDraftVal] = useState<string>('');
     const [isDirty, setIsDirty] = useState(false);
@@ -1154,7 +1192,7 @@ const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; current
             <div className="flex items-center justify-between mb-4">
                 <h4 className="text-sm font-black text-[#002060] uppercase tracking-widest flex-1 truncate">{widget.name}</h4>
                 <div className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white" style={{ backgroundColor: color.primary }}>
-                    STATE: {currentValue !== undefined ? String(currentValue) : '--'}
+                    {t.state}: {currentValue !== undefined ? String(currentValue) : '--'}
                 </div>
             </div>
 
@@ -1175,7 +1213,7 @@ const RadioButtonsWidget: React.FC<{ widget: Widget; colorIndex: number; current
             </div>
             
             <button onClick={handleSubmit} className="flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800">
-                <Send size={12} /> Send Command
+                <Send size={12} /> {t.sendCommand}
             </button>
         </div>
     );
@@ -1191,6 +1229,7 @@ export interface WidgetRendererProps {
     timeRange?: string;
     onRangeChange?: (range: string) => void;
     isOffline?: boolean;
+    isClient?: boolean;
 }
 export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     widget,
@@ -1201,7 +1240,8 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
     historyData,
     timeRange,
     onRangeChange,
-    isOffline = false
+    isOffline = false,
+    isClient = false
 }) => {
     const displayValue = isPreview ? (widget.widgetType === ReadingWidgetType.GAUGE ? 67 : 24.5) : currentData;
     const displayHistory = isPreview ? generateDemoTimeSeries() : (historyData || []);
@@ -1273,7 +1313,9 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({
 
     return (
         <div className={`relative h-full transition-all duration-500 animate-in fade-in slide-in-from-bottom-2 ${isOffline ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
+            <ClientContext.Provider value={isClient}>
             {renderWidget()}
+        </ClientContext.Provider>
         </div>
     );
 };

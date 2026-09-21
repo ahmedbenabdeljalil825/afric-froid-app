@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Afric Froid — 24/7 telemetry bridge
  *
  * Subscribes to MQTT topics derived from active widgets in Supabase and writes
@@ -12,6 +12,18 @@
 import 'dotenv/config';
 import mqtt from 'mqtt';
 import { createClient } from '@supabase/supabase-js';
+import admin from 'firebase-admin';
+
+let firebaseApp = null;
+try {
+  // Uses GOOGLE_APPLICATION_CREDENTIALS environment variable
+  firebaseApp = admin.initializeApp({
+    credential: admin.credential.applicationDefault()
+  });
+  console.log('[bridge] Firebase Admin initialized for push notifications');
+} catch (e) {
+  console.warn('[bridge] Firebase Admin not initialized. Push notifications disabled until credentials are provided.');
+}
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -81,6 +93,31 @@ async function handleAlarmTrigger(w, isActive) {
           is_acknowledged: false
         });
         console.log('[bridge] ALARM TRIGGERED: ' + w.variable_name);
+        
+        // Dispatch push notification to device
+        if (firebaseApp) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('config')
+              .eq('id', w.user_id)
+              .single();
+            const fcmToken = profile?.config?.fcm_token;
+            if (fcmToken) {
+              await admin.messaging().send({
+                token: fcmToken,
+                notification: {
+                  title: '🚨 System Alarm',
+                  body: w.config?.customMessage || `Alarm triggered for ${w.variable_name}`
+                },
+                data: { type: 'alarm' }
+              });
+              console.log(`[bridge] Push notification sent to user ${w.user_id}`);
+            }
+          } catch (pushErr) {
+            console.error('[bridge] Push notification failed:', pushErr);
+          }
+        }
       }
     } else {
       // Resolve active alarms for this widget
