@@ -4,6 +4,17 @@ All notable changes to the AfricFroid project (Web Dashboard, Android App, Telem
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-09-21
+
+### Fixed
+- **Security**: User deletion now invokes the `delete-user` Supabase Edge Function, which calls `auth.admin.deleteUser()` to fully remove the user from `auth.users` — preventing deleted users from re-authenticating.
+- **White Screen Bug**: Added `ErrorBoundary` component wrapping all lazy-loaded pages. Unhandled render errors now display a friendly error screen with a reload button instead of a blank white page.
+
+### Improved
+- **Android / WebView**: Alarm buzzer audio is now gated on a prior user interaction, bypassing Android WebView autoplay restrictions. Audio defers until first `click` or `touchstart` event.
+- **Offline Safety**: Removed `cdn.tailwindcss.com` CDN script from `index.html`. App now relies solely on pre-compiled Tailwind CSS, ensuring full styling on air-gapped plant networks.
+- **Security**: Added `supabase/functions/` exclusion to `tsconfig.json` to prevent Deno type conflicts in the browser build.
+
 ## [1.4.0] - 2026-09-21
 
 ### Added

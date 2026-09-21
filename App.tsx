@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import Layout from './components/Layout';
 import PageTransition from './components/PageTransition';
 import GlobalLoader from './components/GlobalLoader';
+import ErrorBoundary from './components/ErrorBoundary';
 import { AlarmManager } from './components/AlarmManager';
 
 // Lazy load pages for better performance and to show transitions during network delay
@@ -55,8 +56,9 @@ const AppContent: React.FC<{
   }
 
   return (
-    <Suspense fallback={<GlobalLoader />}>
-      {currentUser && currentUser.role !== UserRole.ADMIN && <AlarmManager user={currentUser} />}
+    <ErrorBoundary>
+      <Suspense fallback={<GlobalLoader />}>
+        {currentUser && currentUser.role !== UserRole.ADMIN && <AlarmManager user={currentUser} />}
       <AnimatePresence mode="wait">
         <Routes location={location}>
           <Route
@@ -105,6 +107,7 @@ const AppContent: React.FC<{
         </Routes>
       </AnimatePresence>
     </Suspense>
+    </ErrorBoundary>
   );
 };
 

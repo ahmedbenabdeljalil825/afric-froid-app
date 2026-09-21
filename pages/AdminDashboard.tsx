@@ -317,17 +317,20 @@ const AdminDashboard: React.FC = () => {
   const handleDeleteUser = async (userId: string) => {
     const ok = await confirm({
       title: 'Delete user?',
-      message: 'This will delete the profile row. Accessible data may be lost.',
+      message: 'This will permanently remove the user from the system. They will no longer be able to log in.',
       confirmText: 'Delete',
       cancelText: 'Cancel',
       danger: true,
     });
     if (!ok) return;
 
-    const { error } = await supabase.from('profiles').delete().eq('id', userId);
+    // Invoke Edge Function which deletes from auth.users (cascades to profiles)
+    const { error } = await supabase.functions.invoke('delete-user', {
+      body: { userId },
+    });
     if (!error) {
       fetchUsers();
-      toast({ kind: 'success', title: 'Deleted', message: 'User deleted.' });
+      toast({ kind: 'success', title: 'Deleted', message: 'User has been permanently removed.' });
     } else {
       toast({ kind: 'error', title: 'Delete failed', message: error.message });
     }

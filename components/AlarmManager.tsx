@@ -18,7 +18,28 @@ import { TRANSLATIONS } from '../constants';
 export function AlarmManager({ user }: { user: User }) {
   const [activeAlarms, setActiveAlarms] = useState<AlarmEvent[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const userInteracted = useRef(false);
+  const pendingPlay = useRef(false);
   const t = TRANSLATIONS[user.language];
+
+  // Track first user interaction so we can unblock autoplay on Android WebView
+  useEffect(() => {
+    const markInteracted = () => {
+      if (userInteracted.current) return;
+      userInteracted.current = true;
+      // If an alarm was already ringing when the page loaded, start it now
+      if (pendingPlay.current && audioRef.current) {
+        audioRef.current.play().catch(e => console.warn('Audio play blocked:', e));
+        pendingPlay.current = false;
+      }
+    };
+    document.addEventListener('click', markInteracted, { once: true });
+    document.addEventListener('touchstart', markInteracted, { once: true });
+    return () => {
+      document.removeEventListener('click', markInteracted);
+      document.removeEventListener('touchstart', markInteracted);
+    };
+  }, []);
 
   useEffect(() => {
     // Initialize audio element
@@ -83,9 +104,14 @@ export function AlarmManager({ user }: { user: User }) {
 
   useEffect(() => {
     if (isRinging && audioRef.current) {
-      // Browsers may block autoplay until user interaction, so we catch the promise
-      audioRef.current.play().catch(e => console.warn('Audio play blocked by browser policy:', e));
+      if (userInteracted.current) {
+        audioRef.current.play().catch(e => console.warn('Audio play blocked by browser policy:', e));
+      } else {
+        // Defer until first user interaction (Android WebView autoplay restriction)
+        pendingPlay.current = true;
+      }
     } else if (!isRinging && audioRef.current) {
+      pendingPlay.current = false;
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
