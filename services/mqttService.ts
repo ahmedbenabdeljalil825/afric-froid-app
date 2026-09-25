@@ -317,18 +317,14 @@ class MQTTService {
         }, this.OFFLINE_UI_DEBOUNCE_MS);
     }
 
+    private runtimeClientId: string | null = null;
+
     /** One MQTT client id per browser tab session — avoids looking like a new device on every reconnect */
     private getStableClientId(): string {
-        if (typeof sessionStorage === 'undefined') {
-            return 'webapp_' + Math.random().toString(16).slice(2, 10);
+        if (!this.runtimeClientId) {
+            this.runtimeClientId = 'webapp_' + Math.random().toString(16).slice(2, 10);
         }
-        const key = 'af_mqtt_client_id';
-        let id = sessionStorage.getItem(key);
-        if (!id) {
-            id = 'webapp_' + Math.random().toString(16).slice(2, 10);
-            sessionStorage.setItem(key, id);
-        }
-        return id;
+        return this.runtimeClientId;
     }
 
     /**
@@ -493,9 +489,7 @@ class MQTTService {
     disconnect() {
         this.clearOfflineUiDebounce();
         this.unbindVisibilityForStatusSync();
-        if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.removeItem('af_mqtt_client_id');
-        }
+        this.runtimeClientId = null;
         if (this.flushTimer) {
             clearInterval(this.flushTimer);
             this.flushTimer = null;
