@@ -1,7 +1,11 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { autoUpdater } from 'electron-updater';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // The built directory structure
 //
@@ -160,11 +164,10 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: fs.existsSync(path.join(__dirname, 'preload.mjs'))
-        ? path.join(__dirname, 'preload.mjs')
-        : path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs'),
+      backgroundThrottling: false, // Prevents MQTT disconnects when minimized
     },
   });
 

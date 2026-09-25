@@ -3,6 +3,8 @@ import { User } from '../types';
 import { Lock, CheckCircle2, AlertCircle, Loader2, } from 'lucide-react';
 import { TRANSLATIONS, DEFAULT_USER_CONFIG } from '../constants';
 import { supabase } from '../services/supabase';
+import { androidOtaService } from '../services/androidOtaService';
+import { Capacitor } from '@capacitor/core';
 
 interface SettingsProps {
   user: User;
@@ -153,6 +155,25 @@ const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
             </div>
           </div>
         </div>
+
+        {/* Developer / Testing Section (Android Only) */}
+        {Capacitor.isNativePlatform() && (
+          <div className="bg-white rounded-[32px] p-8 lg:p-10 shadow-xl shadow-slate-200/50 border border-slate-100 relative overflow-hidden group">
+            <div className="relative">
+              <h3 className="text-xl font-bold text-[#002060] mb-2">Developer Actions</h3>
+              <p className="text-slate-500 mb-6 font-medium">Test system functions</p>
+
+              <button
+                type="button"
+                onClick={() => androidOtaService.verifyOtaFlow('1.5.1')}
+                className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold transition-all hover:scale-105 active:scale-95 shadow-md shadow-indigo-500/20"
+              >
+                Trigger Simulated OTA Update
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

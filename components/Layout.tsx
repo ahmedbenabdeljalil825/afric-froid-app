@@ -24,7 +24,7 @@ interface LayoutProps {
 
 const BrandIcon = ({ className = "h-10 w-10" }: { className?: string }) => (
   <img
-    src="/afric-froid-logo.png"
+    src="./afric-froid-logo.png"
     alt="AFRIC FROID logo"
     className={className}
   />

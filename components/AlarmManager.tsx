@@ -43,7 +43,7 @@ export function AlarmManager({ user }: { user: User }) {
 
   useEffect(() => {
     // Initialize audio element
-    audioRef.current = new Audio('/buzzer.ogg');
+    audioRef.current = new Audio('./buzzer.ogg');
     audioRef.current.loop = true;
     
     // Fetch initial active alarms

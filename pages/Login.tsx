@@ -7,7 +7,7 @@ import { supabase } from '../services/supabase';
 const BrandLogoVertical = ({ className = "" }: { className?: string }) => {
   return (
     <img
-      src="/afric-froid-logo.png"
+      src="./afric-froid-logo.png"
       alt="AFRIC FROID logo"
       className={className}
     />

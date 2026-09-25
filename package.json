@@ -47,8 +47,9 @@
     "vite-plugin-electron": "^1.1.2"
   },
   "build": {
-    "appId": "com.africfroid.dashboard.desktop",
-    "productName": "AFRIC FROID Dashboard",
+    "appId": "com.africfroid.scada.desktop",
+    "productName": "AFRIC FROID SCADA",
+    "icon": "public/afric-froid-logo.png",
     "directories": {
       "output": "release/"
     },
@@ -59,7 +60,8 @@
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "icon": "public/afric-froid-logo.png"
     },
     "publish": [
       {
