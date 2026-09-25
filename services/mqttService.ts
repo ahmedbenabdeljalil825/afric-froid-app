@@ -335,9 +335,6 @@ class MQTTService {
         if (!this.client || !this.config) return;
 
         const topics = new Set<string>();
-        if (this.config.topics.telemetry) {
-            topics.add(this.config.topics.telemetry);
-        }
         this.topicCallbacks.forEach((_cbs, topic) => {
             if (topic) topics.add(topic);
         });
@@ -356,7 +353,7 @@ class MQTTService {
     subscribe(callback: MessageCallback, topic?: string, qos: 0 | 1 | 2 = 0): () => void {
         if (!this.client || !this.config) return () => { };
 
-        const targetTopic = (topic || this.config.topics.telemetry || '').trim();
+        const targetTopic = (topic || '').trim();
         if (!targetTopic) return () => { };
 
         // Subscribe the MQTT client to the topic if not already subscribed

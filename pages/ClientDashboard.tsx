@@ -197,15 +197,11 @@ const ClientDashboard: React.FC<ClientDashboardProps> = ({ user }) => {
         };
 
         fetchedWidgets.forEach(w => {
-            addTopic(w.mqttTopic, w.qos || 0);
+            if (w.mqttTopic) addTopic(w.mqttTopic, w.qos || 0);
             if ((w.config as any)?.readTopic) {
                 addTopic((w.config as any).readTopic, (w.config as any)?.readQos || 0);
             }
         });
-
-        if (user.mqttConfig?.topics.telemetry) {
-          addTopic(user.mqttConfig.topics.telemetry, 0);
-        }
 
         if (isCancelled) return;
         uniqueTopicsMap.forEach((qos, topic) => {
