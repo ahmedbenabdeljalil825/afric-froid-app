@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Afric Froid — 24/7 telemetry bridge
  *
  * Subscribes to MQTT topics derived from active widgets in Supabase and writes
@@ -13,16 +13,17 @@ import 'dotenv/config';
 import mqtt from 'mqtt';
 import { createClient } from '@supabase/supabase-js';
 import admin from 'firebase-admin';
+import { getMessaging } from 'firebase-admin/messaging';
 
 let firebaseApp = null;
 try {
   // Uses GOOGLE_APPLICATION_CREDENTIALS environment variable
   firebaseApp = admin.initializeApp({
-    credential: admin.credential.applicationDefault()
+    credential: admin.applicationDefault()
   });
   console.log('[bridge] Firebase Admin initialized for push notifications');
 } catch (e) {
-  console.warn('[bridge] Firebase Admin not initialized. Push notifications disabled until credentials are provided.');
+  console.warn('[bridge] Firebase Admin not initialized:', e.message);
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -104,7 +105,7 @@ async function handleAlarmTrigger(w, isActive) {
               .single();
             const fcmToken = profile?.config?.fcm_token;
             if (fcmToken) {
-              await admin.messaging().send({
+              await getMessaging().send({
                 token: fcmToken,
                 notification: {
                   title: '🚨 System Alarm',
