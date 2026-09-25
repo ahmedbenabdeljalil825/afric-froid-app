@@ -335,10 +335,15 @@ class MQTTService {
         if (!this.client || !this.config) return;
 
         const topics = new Set<string>();
-        topics.add(this.config.topics.telemetry);
-        this.topicCallbacks.forEach((_cbs, topic) => topics.add(topic));
+        if (this.config.topics.telemetry) {
+            topics.add(this.config.topics.telemetry);
+        }
+        this.topicCallbacks.forEach((_cbs, topic) => {
+            if (topic) topics.add(topic);
+        });
 
         topics.forEach((topic) => {
+            if (!topic) return;
             const qos = this.topicQos.get(topic) || 0;
             this.client!.subscribe(topic, { qos }, (err: Error | null) => {
                 if (err) console.error('[MQTT] Subscribe error:', topic, err);
@@ -351,7 +356,8 @@ class MQTTService {
     subscribe(callback: MessageCallback, topic?: string, qos: 0 | 1 | 2 = 0): () => void {
         if (!this.client || !this.config) return () => { };
 
-        const targetTopic = topic || this.config.topics.telemetry;
+        const targetTopic = (topic || this.config.topics.telemetry || '').trim();
+        if (!targetTopic) return () => { };
 
         // Subscribe the MQTT client to the topic if not already subscribed
         const currentQos = this.topicQos.get(targetTopic) || 0;
