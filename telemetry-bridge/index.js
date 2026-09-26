@@ -27,7 +27,7 @@ try {
 }
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 const MQTT_URL = process.env.MQTT_BROKER_URL;
 const MQTT_USER = process.env.MQTT_USERNAME || undefined;
 const MQTT_PASS = process.env.MQTT_PASSWORD || undefined;
@@ -36,8 +36,8 @@ const WIDGET_REFRESH_MS = Number(process.env.BRIDGE_WIDGET_REFRESH_MS) || 5 * 60
 const TELEMETRY_RETENTION_HOURS = Number(process.env.BRIDGE_TELEMETRY_RETENTION_HOURS) || 168; // ~7 days
 const PRUNE_INTERVAL_MS = Number(process.env.BRIDGE_PRUNE_INTERVAL_MS) || 6 * 60 * 60 * 1000; // prune every ~6 hours
 
-if (!SUPABASE_URL || !ANON_KEY) {
-  console.error('Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 if (!MQTT_URL) {
@@ -45,8 +45,9 @@ if (!MQTT_URL) {
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, ANON_KEY, {
-  auth: { persistSession: false, autoRefreshToken: true },
+// Use service role key — bypasses RLS entirely, no email/password login needed.
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
 });
 
 /** @type {Array<{ id: string; mqtt_topic: string; variable_name: string; history_interval: number | null; config: Record<string, unknown> | null; mqtt_action: string }>} */
@@ -298,19 +299,7 @@ function listenForCommands() {
 }
 
 async function main() {
-  console.log('[bridge] Authenticating with Supabase...');
-  const email = process.env.SUPABASE_EMAIL;
-  const password = process.env.SUPABASE_PASSWORD;
-  if (!email || !password) {
-      console.error('[bridge] Missing SUPABASE_EMAIL or SUPABASE_PASSWORD environment variables.');
-      process.exit(1);
-  }
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) {
-    console.error('[bridge] Failed to authenticate:', error.message);
-    process.exit(1);
-  }
-  console.log('[bridge] Authentication successful!');
+  console.log('[bridge] Starting with service role key — no user auth required.');
   listenForCommands();
   await loadWidgets();
   connectMqtt();
